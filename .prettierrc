@@ -1,0 +1,7 @@
+{
+  "singleQuote": true,
+  "semi": false,
+  "prettier.spaceBeforeFunctionParen": false,
+  "trailingComma": "es5",
+  "arrowParens": "avoid"
+}

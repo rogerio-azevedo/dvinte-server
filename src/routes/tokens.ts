@@ -1,24 +1,31 @@
 import { FastifyInstance } from 'fastify'
 import { Token } from '../models/index.js'
-import sharp from 'sharp'
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
-import { dirname } from 'path'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+import {
+  uploadToS3,
+  deleteFromS3,
+  generateFileName,
+  resizeImage,
+  extractFileNameFromS3Url,
+  UPLOAD_CONFIGS,
+} from '../utils/s3.js'
 
 export default async function tokenRoutes(fastify: FastifyInstance) {
-  // Get all tokens - handle both with and without trailing slash
+  // Get all tokens
   fastify.get('/tokens', async (request, reply) => {
     try {
       const tokens = await Token.findAll({
-        attributes: ['id', 'name', 'path', 'url'],
         order: [['created_at', 'DESC']],
       })
 
-      return reply.send(tokens)
+      const formattedTokens = tokens.map(token => {
+        return {
+          ...token.toJSON(),
+        }
+      })
+
+      console.log('🔍 Retrieving tokens from database:', formattedTokens)
+
+      return reply.send(formattedTokens)
     } catch (error) {
       fastify.log.error(error)
       return reply.code(500).send({ error: 'Failed to fetch tokens' })
@@ -29,11 +36,16 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
   fastify.get('/tokens/', async (request, reply) => {
     try {
       const tokens = await Token.findAll({
-        attributes: ['id', 'name', 'path', 'url'],
         order: [['created_at', 'DESC']],
       })
 
-      return reply.send(tokens)
+      const formattedTokens = tokens.map(token => {
+        return {
+          ...token.toJSON(),
+        }
+      })
+
+      return reply.send(formattedTokens)
     } catch (error) {
       fastify.log.error(error)
       return reply.code(500).send({ error: 'Failed to fetch tokens' })
@@ -73,61 +85,94 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
       }
 
       const fileName = data.filename
-      const buffer = await data.toBuffer()
 
-      // Generate unique filename
-      const timestamp = Date.now()
-      const ext = path.extname(fileName)
-      const newName = `${timestamp}-${Math.random()
-        .toString(36)
-        .substring(2)}${ext}`
-
-      // Define paths
-      const uploadsDir = path.resolve(__dirname, '..', '..', 'tmp', 'uploads')
-      const tokensDir = path.resolve(uploadsDir, 'tokens')
-      const tempPath = path.resolve(uploadsDir, newName)
-      const finalPath = path.resolve(tokensDir, newName)
-
-      // Ensure directories exist
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true })
+      // Ler o arquivo em buffer
+      const chunks: Buffer[] = []
+      for await (const chunk of data.file) {
+        chunks.push(chunk)
       }
-      if (!fs.existsSync(tokensDir)) {
-        fs.mkdirSync(tokensDir, { recursive: true })
-      }
+      const buffer = Buffer.concat(chunks)
 
-      // Save temporary file
-      fs.writeFileSync(tempPath, buffer)
+      console.log('🔍 Recebendo token:', data.filename)
+      console.log('🔍 Tipo do arquivo:', data.mimetype)
+      console.log('🔍 Tamanho do arquivo:', buffer.length)
 
-      try {
-        // Process image with sharp
-        await sharp(tempPath)
-          .resize(800, 800, {
-            fit: 'inside',
-            withoutEnlargement: true,
-          })
-          .png({ quality: 95 })
-          .toFile(finalPath)
+      // Verificar configurações para tokens
+      const config = UPLOAD_CONFIGS.TOKENS
+      console.log('🔍 Configurações de upload:', config)
 
-        // Remove temporary file
-        fs.unlinkSync(tempPath)
-
-        // Save to database
-        const token = await Token.create({
-          name: fileName,
-          path: newName,
+      // Verificar tamanho do arquivo
+      if (buffer.length > config.maxSize) {
+        console.log('❌ Arquivo muito grande:', buffer.length)
+        return reply.code(400).send({
+          error: `Arquivo muito grande. Máximo: ${
+            config.maxSize / (1024 * 1024)
+          }MB`,
         })
-
-        fastify.log.info(`Token uploaded: ${fileName} -> ${newName}`)
-        return reply.send(token)
-      } catch (sharpError) {
-        // Clean up files on error
-        if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath)
-        if (fs.existsSync(finalPath)) fs.unlinkSync(finalPath)
-        throw sharpError
       }
+
+      // Verificar tipo de arquivo
+      const isValidType = config.allowedTypes.some(
+        type => type === data.mimetype
+      )
+      if (!isValidType) {
+        console.log('❌ Tipo de arquivo não permitido:', data.mimetype)
+        return reply.code(400).send({
+          error: `Tipo de arquivo não permitido. Tipos aceitos: ${config.allowedTypes.join(
+            ', '
+          )}`,
+        })
+      }
+
+      // Redimensionar imagem (800x800px para tokens) mantendo formato original
+      const resizeResult = await resizeImage(
+        buffer,
+        config.resize.width,
+        config.resize.height,
+        config.resize.quality,
+        data.mimetype
+      )
+      console.log(
+        '🔍 Imagem redimensionada com sucesso, formato:',
+        resizeResult.mimetype
+      )
+
+      // Gerar nome único do arquivo
+      const uniqueFileName = generateFileName(fileName, 'token')
+      console.log('🔍 Nome único gerado:', uniqueFileName)
+
+      // Metadata para o arquivo
+      const metadata = {
+        originalName: fileName,
+        uploadedAt: new Date().toISOString(),
+        category: 'token',
+      }
+      console.log('🔍 Metadata do arquivo:', metadata)
+
+      // Upload para S3
+      const s3Url = await uploadToS3(
+        'TOKENS',
+        resizeResult.buffer,
+        uniqueFileName,
+        resizeResult.mimetype, // Usa o mimetype correto preservando o formato
+        metadata
+      )
+      console.log('🔍 Upload para S3 concluído:', s3Url)
+
+      // Salvar no banco com a URL do S3
+      const token = await Token.create({
+        name: fileName,
+        path: s3Url, // Agora salva a URL completa do S3
+      })
+
+      fastify.log.info(`Token uploaded to S3: ${fileName} -> ${uniqueFileName}`)
+      return reply.send(token)
     } catch (error) {
-      fastify.log.error('Error uploading token:', error)
+      fastify.log.error('Error uploading token:', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        details: error,
+      })
       return reply.code(500).send({ error: 'Failed to upload token' })
     }
   })
@@ -148,20 +193,20 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
         return reply.code(404).send({ error: 'Token not found' })
       }
 
-      // Delete file from filesystem
-      const filePath = path.resolve(
-        __dirname,
-        '..',
-        '..',
-        'tmp',
-        'uploads',
-        'tokens',
-        token.path
-      )
+      // Delete file from S3 if it's an S3 URL
+      if (token.path.includes('s3.') || token.path.includes('amazonaws.com')) {
+        try {
+          // Extrair nome do arquivo da URL S3
+          const fileName = extractFileNameFromS3Url(token.path)
 
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath)
-        fastify.log.info(`Token file deleted: ${token.path}`)
+          if (fileName) {
+            await deleteFromS3('TOKENS', fileName)
+            fastify.log.info(`Token file deleted from S3: ${fileName}`)
+          }
+        } catch (s3Error) {
+          fastify.log.warn(`Failed to delete S3 file: ${s3Error}`)
+          // Continua mesmo se falhar no S3 - pelo menos remove do banco
+        }
       }
 
       // Delete from database

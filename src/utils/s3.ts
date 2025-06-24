@@ -45,21 +45,62 @@ export function generateFileName(
 }
 
 /**
- * Redimensiona uma imagem mantendo a proporção
+ * Redimensiona uma imagem mantendo a proporção e formato original
  */
 export async function resizeImage(
   buffer: Buffer,
-  maxWidth: number = 800,
-  maxHeight: number = 600,
-  quality: number = 80
-): Promise<Buffer> {
-  return await sharp(buffer)
-    .resize(maxWidth, maxHeight, {
-      fit: 'inside',
-      withoutEnlargement: true,
-    })
-    .jpeg({ quality })
-    .toBuffer()
+  maxWidth: number = 3500,
+  maxHeight: number = 3500,
+  quality: number = 100,
+  originalMimetype?: string
+): Promise<{ buffer: Buffer; mimetype: string }> {
+  // Detectar o formato da imagem original
+  const sharpInstance = sharp(buffer)
+  const metadata = await sharpInstance.metadata()
+
+  // Determinar o formato de saída baseado no mimetype original
+  let outputFormat = 'jpeg'
+  let outputMimetype = 'image/jpeg'
+
+  if (originalMimetype) {
+    if (originalMimetype === 'image/png') {
+      outputFormat = 'png'
+      outputMimetype = 'image/png'
+    } else if (originalMimetype === 'image/webp') {
+      outputFormat = 'webp'
+      outputMimetype = 'image/webp'
+    }
+  } else if (metadata.format) {
+    // Fallback para o formato detectado pelo Sharp
+    if (metadata.format === 'png') {
+      outputFormat = 'png'
+      outputMimetype = 'image/png'
+    } else if (metadata.format === 'webp') {
+      outputFormat = 'webp'
+      outputMimetype = 'image/webp'
+    }
+  }
+
+  let resizeInstance = sharpInstance.resize(maxWidth, maxHeight, {
+    fit: 'inside',
+    withoutEnlargement: true,
+  })
+
+  // Aplicar o formato correto mantendo transparência
+  if (outputFormat === 'png') {
+    resizeInstance = resizeInstance.png({ quality })
+  } else if (outputFormat === 'webp') {
+    resizeInstance = resizeInstance.webp({ quality })
+  } else {
+    resizeInstance = resizeInstance.jpeg({ quality })
+  }
+
+  const resultBuffer = await resizeInstance.toBuffer()
+
+  return {
+    buffer: resultBuffer,
+    mimetype: outputMimetype,
+  }
 }
 
 /**
@@ -168,12 +209,12 @@ export const UPLOAD_CONFIGS = {
   PORTRAITS: {
     maxSize: 20 * 1024 * 1024, // 10MB
     allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
-    resize: { width: 400, height: 400, quality: 85 },
+    resize: { width: 800, height: 800, quality: 95 },
   },
   TOKENS: {
     maxSize: 2 * 1024 * 1024, // 2MB
     allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
-    resize: { width: 200, height: 200, quality: 80 },
+    resize: { width: 500, height: 500, quality: 95 },
   },
   MAPS: {
     maxSize: 10 * 1024 * 1024, // 10MB

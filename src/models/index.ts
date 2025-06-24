@@ -76,9 +76,20 @@ interface DivinityAttributes {
 interface WeaponAttributes {
   id?: number
   name: string
-  damage?: string
-  type?: string
-  range?: string
+  dice_s: number
+  dice_m: number
+  multiplier_s: number
+  multiplier_m: number
+  critical: number
+  crit_from: number
+  range: number
+  type: string
+  material?: string
+  weight: number
+  price?: number
+  str_bonus: number
+  book: string
+  version: string
   created_at?: Date
   updated_at?: Date
 }
@@ -234,9 +245,20 @@ class Divinity extends Model<DivinityAttributes> implements DivinityAttributes {
 class Weapon extends Model<WeaponAttributes> implements WeaponAttributes {
   public id!: number
   public name!: string
-  public damage!: string
+  public dice_s!: number
+  public dice_m!: number
+  public multiplier_s!: number
+  public multiplier_m!: number
+  public critical!: number
+  public crit_from!: number
+  public range!: number
   public type!: string
-  public range!: string
+  public material!: string
+  public weight!: number
+  public price!: number
+  public str_bonus!: number
+  public book!: string
+  public version!: string
   public readonly created_at!: Date
   public readonly updated_at!: Date
 }
@@ -517,9 +539,56 @@ Weapon.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    damage: DataTypes.STRING,
-    type: DataTypes.STRING,
-    range: DataTypes.STRING,
+    dice_s: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    dice_m: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    multiplier_s: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    multiplier_m: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    critical: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    crit_from: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    range: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+    },
+    type: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    material: DataTypes.STRING,
+    weight: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+    },
+    price: DataTypes.INTEGER,
+    str_bonus: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+    },
+    book: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    version: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
   },
   {
     sequelize,

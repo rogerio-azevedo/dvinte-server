@@ -102,6 +102,59 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
     }
   })
 
+  // Create new character token
+  fastify.post('/chartokens', async (request, reply) => {
+    try {
+      const {
+        character_id,
+        token_id,
+        x = 250,
+        y = 250,
+        width = 90,
+        height = 90,
+        rotation = 90,
+        enabled = false,
+      } = request.body as {
+        character_id: number
+        token_id: number
+        x?: number
+        y?: number
+        width?: number
+        height?: number
+        rotation?: number
+        enabled?: boolean
+      }
+
+      fastify.log.info('Creating new character token:', {
+        character_id,
+        token_id,
+        x,
+        y,
+        width,
+        height,
+        rotation,
+        enabled,
+      })
+
+      const characterToken = await CharacterToken.create({
+        character_id,
+        token_id,
+        x: parseFloat(x.toFixed(2)),
+        y: parseFloat(y.toFixed(2)),
+        width: parseFloat(width.toFixed(2)),
+        height: parseFloat(height.toFixed(2)),
+        rotation: parseFloat(rotation.toFixed(2)),
+        enabled,
+      })
+
+      fastify.log.info(`Character token created with ID: ${characterToken.id}`)
+      return reply.code(201).send(characterToken)
+    } catch (error) {
+      fastify.log.error(error)
+      return reply.code(400).send({ error: 'Failed to create character token' })
+    }
+  })
+
   // Update character token position (without ID in URL - for drag and drop)
   fastify.put('/chartokens', async (request, reply) => {
     try {

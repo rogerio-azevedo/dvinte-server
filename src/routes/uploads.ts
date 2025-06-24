@@ -27,12 +27,9 @@ export default async function uploadsRoutes(fastify: FastifyInstance) {
       const category = (request.query as any)?.category as string
 
       if (!Object.keys(UPLOAD_CONFIGS).includes(folderType)) {
-        return reply
-          .code(400)
-          .send({
-            error:
-              'folderType inválido. Use: PORTRAITS, TOKENS, MAPS ou GENERAL',
-          })
+        return reply.code(400).send({
+          error: 'folderType inválido. Use: PORTRAITS, TOKENS, MAPS ou GENERAL',
+        })
       }
 
       // Verificar configurações do tipo de arquivo
@@ -49,7 +46,7 @@ export default async function uploadsRoutes(fastify: FastifyInstance) {
       if (buffer.length > config.maxSize) {
         return reply.code(400).send({
           error: `Arquivo muito grande. Máximo: ${
-            config.maxSize / (1024 * 1024)
+            config.maxSize / (3500 * 3500)
           }MB`,
         })
       }
@@ -68,18 +65,22 @@ export default async function uploadsRoutes(fastify: FastifyInstance) {
 
       let finalBuffer = buffer
 
-      // Redimensionar imagens se necessário
-      if (folderType !== 'GENERAL' && data.mimetype.startsWith('image/')) {
-        const resizeConfig = (config as any).resize
-        if (resizeConfig) {
-          finalBuffer = await resizeImage(
-            buffer,
-            resizeConfig.width,
-            resizeConfig.height,
-            resizeConfig.quality
-          )
-        }
-      }
+      // Redimensionar imagens se necessário (mantendo formato original)
+      // if (folderType !== 'GENERAL' && data.mimetype.startsWith('image/')) {
+      //   const resizeConfig = (config as any).resize
+      //   if (resizeConfig) {
+      //     const resizeResult = await resizeImage(
+      //       buffer,
+      //       resizeConfig.width,
+      //       resizeConfig.height,
+      //       resizeConfig.quality,
+      //       data.mimetype
+      //     )
+      //     finalBuffer = resizeResult.buffer
+      //     // Se você descomentar isso, também atualize o contentType:
+      //     // data.mimetype = resizeResult.mimetype
+      //   }
+      // }
 
       // Gerar nome único do arquivo
       const fileName = generateFileName(data.filename, category)

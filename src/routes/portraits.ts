@@ -7,7 +7,6 @@ import {
   resizeImage,
   extractFileNameFromS3Url,
   UPLOAD_CONFIGS,
-  S3_BUCKET,
 } from '../utils/s3.js'
 
 export default async function portraitRoutes(fastify: FastifyInstance) {
@@ -124,14 +123,18 @@ export default async function portraitRoutes(fastify: FastifyInstance) {
         })
       }
 
-      // Redimensionar imagem (400x400px para portraits)
-      const resizedBuffer = await resizeImage(
+      // Redimensionar imagem (400x400px para portraits) mantendo formato original
+      const resizeResult = await resizeImage(
         buffer,
         config.resize.width,
         config.resize.height,
-        config.resize.quality
+        config.resize.quality,
+        data.mimetype
       )
-      console.log('🔍 Imagem redimensionada com sucesso')
+      console.log(
+        '🔍 Imagem redimensionada com sucesso, formato:',
+        resizeResult.mimetype
+      )
 
       // Gerar nome único do arquivo
       const uniqueFileName = generateFileName(fileName, 'portrait')
@@ -148,9 +151,9 @@ export default async function portraitRoutes(fastify: FastifyInstance) {
       // Upload para S3
       const s3Url = await uploadToS3(
         'PORTRAITS',
-        resizedBuffer,
+        resizeResult.buffer,
         uniqueFileName,
-        'image/jpeg', // Sharp sempre converte para JPEG
+        resizeResult.mimetype, // Usa o mimetype correto preservando o formato
         metadata
       )
       console.log('🔍 Upload para S3 concluído:', s3Url)

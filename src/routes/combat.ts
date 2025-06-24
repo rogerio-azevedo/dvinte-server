@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { Logs, Initiative } from '../schemas/index.js'
 import { saveMessage } from '../utils/websocket.js'
+import { Character } from '../models/index.js'
 
 // Mock data for now - will be replaced with real models later
 const mockCombatData = {
@@ -60,10 +61,43 @@ export default async function combatRoutes(fastify: FastifyInstance) {
     try {
       const { userId } = request.params as { userId: string }
 
-      // Return mock data for now
-      return reply.send(mockCombatData)
+      fastify.log.info(`Searching for character with user_id: ${userId}`)
+
+      const char: any = await Character.findOne({
+        where: {
+          user_id: userId,
+          is_ativo: true,
+        },
+      })
+
+      if (!char) {
+        fastify.log.error(`No active character found for user_id: ${userId}`)
+        return reply
+          .code(404)
+          .send({ error: 'No active character found for this user' })
+      }
+
+      fastify.log.info(`Found character: ${char.id} - ${char.name}`)
+
+      const charData = {
+        Cod: char.id,
+        Name: char.name?.toUpperCase() || '',
+        Level: char.level || 0,
+        Health: char.health || 0,
+        HealthNow: char.health_now || 0,
+      }
+
+      return reply.send(charData)
     } catch (error) {
-      fastify.log.error(error)
+      fastify.log.error('Error fetching combat data:', error)
+      fastify.log.error(
+        'Error details:',
+        error instanceof Error ? error.message : String(error)
+      )
+      fastify.log.error(
+        'Error stack:',
+        error instanceof Error ? error.stack : 'No stack trace'
+      )
       return reply.code(500).send({ error: 'Failed to fetch combat data' })
     }
   })

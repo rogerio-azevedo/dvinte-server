@@ -1,13 +1,14 @@
 import { FastifyInstance } from 'fastify'
 import { Portrait } from '../models/index.js'
-import sharp from 'sharp'
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
-import { dirname } from 'path'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+import {
+  uploadToS3,
+  deleteFromS3,
+  generateFileName,
+  resizeImage,
+  extractFileNameFromS3Url,
+  UPLOAD_CONFIGS,
+  S3_BUCKET,
+} from '../utils/s3.js'
 
 export default async function portraitRoutes(fastify: FastifyInstance) {
   // Get all portraits
@@ -17,7 +18,34 @@ export default async function portraitRoutes(fastify: FastifyInstance) {
         order: [['created_at', 'DESC']],
       })
 
-      return reply.send(portraits)
+      const formattedPortraits = portraits.map(portrait => {
+        return {
+          ...portrait.toJSON(),
+          // url:
+          //   portrait.path && portrait.path.startsWith('http')
+          //     ? portrait.path
+          //     : `https://${S3_BUCKET}.s3.${
+          //         process.env.AWS_REGION
+          //       }.amazonaws.com/portraits/${portrait.path || ''}`,
+        }
+      })
+      console.log('🚀 ~ fastify.get ~ formattedPortraits:', formattedPortraits)
+
+      // const validPortraits = portraits.filter(portrait => portrait.path)
+
+      // const portraitsWithUrls = portraits.map(portrait => {
+      //   const isS3Url = portrait.path && portrait.path.startsWith('http')
+      //   const url = isS3Url
+      //     ? portrait.path
+      //     : `https://${S3_BUCKET}.s3.${
+      //         process.env.AWS_REGION
+      //       }.amazonaws.com/portraits/${portrait.path || ''}`
+      //   return { formattedPortraits }
+      // })
+
+      console.log('🔍 Retrieving portraits from database:', formattedPortraits)
+
+      return reply.send(formattedPortraits)
     } catch (error) {
       fastify.log.error(error)
       return reply.code(500).send({ error: 'Failed to fetch portraits' })
@@ -57,61 +85,92 @@ export default async function portraitRoutes(fastify: FastifyInstance) {
       }
 
       const fileName = data.filename
-      const buffer = await data.toBuffer()
 
-      // Generate unique filename
-      const timestamp = Date.now()
-      const ext = path.extname(fileName)
-      const newName = `${timestamp}-${Math.random()
-        .toString(36)
-        .substring(2)}${ext}`
-
-      // Define paths
-      const uploadsDir = path.resolve(__dirname, '..', '..', 'tmp', 'uploads')
-      const portraitsDir = path.resolve(uploadsDir, 'portraits')
-      const tempPath = path.resolve(uploadsDir, newName)
-      const finalPath = path.resolve(portraitsDir, newName)
-
-      // Ensure directories exist
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true })
+      // Ler o arquivo em buffer
+      const chunks: Buffer[] = []
+      for await (const chunk of data.file) {
+        chunks.push(chunk)
       }
-      if (!fs.existsSync(portraitsDir)) {
-        fs.mkdirSync(portraitsDir, { recursive: true })
-      }
+      const buffer = Buffer.concat(chunks)
 
-      // Save temporary file
-      fs.writeFileSync(tempPath, buffer)
+      console.log('🔍 Recebendo arquivo:', data.filename)
+      console.log('🔍 Tipo do arquivo:', data.mimetype)
+      console.log('🔍 Tamanho do arquivo:', buffer.length)
 
-      try {
-        // Process image with sharp
-        await sharp(tempPath)
-          .resize(800, 800, {
-            fit: 'inside',
-            withoutEnlargement: true,
-          })
-          .png({ quality: 95 })
-          .toFile(finalPath)
+      // Verificar configurações para portraits
+      const config = UPLOAD_CONFIGS.PORTRAITS
+      console.log('🔍 Configurações de upload:', config)
 
-        // Remove temporary file
-        fs.unlinkSync(tempPath)
-
-        // Save to database
-        const portrait = await Portrait.create({
-          name: fileName,
-          path: newName,
+      // Verificar tamanho do arquivo
+      if (buffer.length > config.maxSize) {
+        console.log('❌ Arquivo muito grande:', buffer.length)
+        return reply.code(400).send({
+          error: `Arquivo muito grande. Máximo: ${
+            config.maxSize / (1024 * 1024)
+          }MB`,
         })
-
-        fastify.log.info(`Portrait uploaded: ${fileName} -> ${newName}`)
-        return reply.send(portrait)
-      } catch (sharpError) {
-        // Clean up files on error
-        if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath)
-        if (fs.existsSync(finalPath)) fs.unlinkSync(finalPath)
-        throw sharpError
       }
+
+      // Verificar tipo de arquivo
+      const isValidType = config.allowedTypes.some(
+        type => type === data.mimetype
+      )
+      if (!isValidType) {
+        console.log('❌ Tipo de arquivo não permitido:', data.mimetype)
+        return reply.code(400).send({
+          error: `Tipo de arquivo não permitido. Tipos aceitos: ${config.allowedTypes.join(
+            ', '
+          )}`,
+        })
+      }
+
+      // Redimensionar imagem (400x400px para portraits)
+      const resizedBuffer = await resizeImage(
+        buffer,
+        config.resize.width,
+        config.resize.height,
+        config.resize.quality
+      )
+      console.log('🔍 Imagem redimensionada com sucesso')
+
+      // Gerar nome único do arquivo
+      const uniqueFileName = generateFileName(fileName, 'portrait')
+      console.log('🔍 Nome único gerado:', uniqueFileName)
+
+      // Metadata para o arquivo
+      const metadata = {
+        originalName: fileName,
+        uploadedAt: new Date().toISOString(),
+        category: 'portrait',
+      }
+      console.log('🔍 Metadata do arquivo:', metadata)
+
+      // Upload para S3
+      const s3Url = await uploadToS3(
+        'PORTRAITS',
+        resizedBuffer,
+        uniqueFileName,
+        'image/jpeg', // Sharp sempre converte para JPEG
+        metadata
+      )
+      console.log('🔍 Upload para S3 concluído:', s3Url)
+
+      // Salvar no banco com a URL do S3
+      const portrait = await Portrait.create({
+        name: fileName,
+        path: s3Url, // Agora salva a URL completa do S3
+      })
+
+      fastify.log.info(
+        `Portrait uploaded to S3: ${fileName} -> ${uniqueFileName}`
+      )
+      return reply.send(portrait)
     } catch (error) {
-      fastify.log.error('Error uploading portrait:', error)
+      fastify.log.error('Error uploading portrait:', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        details: error,
+      })
       return reply.code(500).send({ error: 'Failed to upload portrait' })
     }
   })
@@ -132,20 +191,23 @@ export default async function portraitRoutes(fastify: FastifyInstance) {
         return reply.code(404).send({ error: 'Portrait not found' })
       }
 
-      // Delete file from filesystem
-      const filePath = path.resolve(
-        __dirname,
-        '..',
-        '..',
-        'tmp',
-        'uploads',
-        'portraits',
-        portrait.path
-      )
+      // Delete file from S3 if it's an S3 URL
+      if (
+        portrait.path.includes('s3.') ||
+        portrait.path.includes('amazonaws.com')
+      ) {
+        try {
+          // Extrair nome do arquivo da URL S3
+          const fileName = extractFileNameFromS3Url(portrait.path)
 
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath)
-        fastify.log.info(`Portrait file deleted: ${portrait.path}`)
+          if (fileName) {
+            await deleteFromS3('PORTRAITS', fileName)
+            fastify.log.info(`Portrait file deleted from S3: ${fileName}`)
+          }
+        } catch (s3Error) {
+          fastify.log.warn(`Failed to delete S3 file: ${s3Error}`)
+          // Continua mesmo se falhar no S3 - pelo menos remove do banco
+        }
       }
 
       // Delete from database

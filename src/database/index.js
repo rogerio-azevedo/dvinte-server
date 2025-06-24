@@ -9,7 +9,7 @@ import CharacterArmor from '../app/models/CharacterArmor'
 import CharacterClass from '../app/models/CharacterClass'
 import CharacterWeapon from '../app/models/CharacterWeapon'
 import CharacterEquipment from '../app/models/CharacterEquipment'
-import Portrait from '../app/models/Portrait'
+// import Portrait from '../app/models/Portrait' // Migrado para TypeScript
 import Token from '../app/models/Token'
 import CharacterToken from '../app/models/CharacterToken'
 import Race from '../app/models/Race'
@@ -37,7 +37,7 @@ const models = [
   CharacterArmor,
   CharacterClass,
   CharacterWeapon,
-  Portrait,
+  // Portrait, // Migrado para TypeScript
   Token,
   CharacterToken,
   Campaign,

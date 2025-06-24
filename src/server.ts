@@ -24,12 +24,13 @@ import initiativeRoutes from './routes/initiatives.js'
 import tokenRoutes from './routes/tokens.js'
 import portraitRoutes from './routes/portraits.js'
 import monsterRoutes from './routes/monsters.js'
-
-// Load environment variables
-config()
+import uploadRoutes from './routes/uploads.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
+
+// Load environment variables
+config({ path: join(__dirname, '..', '.env') })
 
 // Create Fastify instance
 const fastify = Fastify({
@@ -203,6 +204,9 @@ async function start() {
 
     fastify.log.info('  - Monster routes...')
     await fastify.register(monsterRoutes)
+
+    fastify.log.info('  - Upload routes (S3)...')
+    await fastify.register(uploadRoutes)
 
     fastify.log.info('🔗 Connecting to databases...')
     await connectDatabases()

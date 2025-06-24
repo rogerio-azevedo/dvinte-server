@@ -593,9 +593,17 @@ Portrait.init(
     url: {
       type: DataTypes.VIRTUAL,
       get() {
+        const path = this.getDataValue('path')
+
+        // Se for URL do S3, retorna como está
+        if (path && (path.includes('s3.') || path.includes('amazonaws.com'))) {
+          return path
+        }
+
+        // Caso contrário, mantém compatibilidade com arquivos locais antigos
         return `${
           process.env.APP_URL || 'http://localhost:9600'
-        }/portrait-files/${this.getDataValue('path')}`
+        }/portrait-files/${path}`
       },
     },
   },
@@ -655,9 +663,17 @@ Token.init(
     url: {
       type: DataTypes.VIRTUAL,
       get() {
+        const path = this.getDataValue('path')
+
+        // Se for URL do S3, retorna como está
+        if (path && (path.includes('s3.') || path.includes('amazonaws.com'))) {
+          return path
+        }
+
+        // Caso contrário, mantém compatibilidade com arquivos locais antigos
         return `${
           process.env.APP_URL || 'http://localhost:9600'
-        }/token-files/${this.getDataValue('path')}`
+        }/token-files/${path}`
       },
     },
   },

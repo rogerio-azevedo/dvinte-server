@@ -9,6 +9,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         attributes: [
           'id',
           'character_id',
+          'token_id',
           'x',
           'y',
           'width',

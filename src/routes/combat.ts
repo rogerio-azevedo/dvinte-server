@@ -63,6 +63,7 @@ export default async function combatRoutes(fastify: FastifyInstance) {
 
       fastify.log.info(`Searching for character with user_id: ${userId}`)
 
+      // Primeiro, buscar apenas o personagem básico para testar
       const char: any = await Character.findOne({
         where: {
           user_id: userId,
@@ -79,26 +80,88 @@ export default async function combatRoutes(fastify: FastifyInstance) {
 
       fastify.log.info(`Found character: ${char.id} - ${char.name}`)
 
+      // Usar as mesmas propriedades do controller original para manter compatibilidade
       const charData = {
         Cod: char.id,
         Name: char.name?.toUpperCase() || '',
         Level: char.level || 0,
         Health: char.health || 0,
         HealthNow: char.health_now || 0,
+        Race: '', // TODO: Add race when available
+        Age: char.age || 0,
+        Gender: '', // TODO: Add gender when available
+        Size: '', // TODO: Add size when available
+
+        Height: char.height || '',
+        Weight: char.weight || '',
+        Eye: char.eye?.toUpperCase() || '',
+        Hair: char.hair?.toUpperCase() || '',
+        Skin: char.skin?.toUpperCase() || '',
+
+        Exp: char.exp || 0,
+        Alig: '', // TODO: Add alignment when available
+        Divin: '', // TODO: Add divinity when available
+
+        Str: 10, // TODO: Add attributes when available
+        Dex: 10,
+        Con: 10,
+        Int: 10,
+        Wis: 10,
+        Cha: 10,
+
+        StrMod: 0, // TODO: Calculate modifiers when attributes available
+        DexMod: 0,
+        ConMod: 0,
+        IntMod: 0,
+        WisMod: 0,
+        ChaMod: 0,
+
+        StrTemp: 0, // TODO: Add temp attributes when available
+        DexTemp: 0,
+        ConTemp: 0,
+        IntTemp: 0,
+        WisTemp: 0,
+        ChaTemp: 0,
+
+        StrModTemp: 0, // TODO: Calculate temp modifiers when available
+        DexModTemp: 0,
+        ConModTemp: 0,
+        IntModTemp: 0,
+        WisModTemp: 0,
+        ChaModTemp: 0,
+
+        Portrait: '', // TODO: Add portrait URL when available
+
+        BaseAttack: 0, // TODO: Calculate from classes when available
+        Fortitude: 0, // TODO: Calculate from classes when available
+        Reflex: 0, // TODO: Calculate from classes when available
+        Will: 0, // TODO: Calculate from classes when available
+
+        Classes: [],
+        Armor: [],
+        Weapon: [],
+        Equipment: [],
       }
 
       return reply.send(charData)
     } catch (error) {
-      fastify.log.error('Error fetching combat data:', error)
-      fastify.log.error(
-        'Error details:',
-        error instanceof Error ? error.message : String(error)
-      )
-      fastify.log.error(
-        'Error stack:',
-        error instanceof Error ? error.stack : 'No stack trace'
-      )
-      return reply.code(500).send({ error: 'Failed to fetch combat data' })
+      fastify.log.error('❌ Error fetching combat data:', error)
+      if (error instanceof Error) {
+        fastify.log.error('❌ Error message:', error.message)
+        fastify.log.error('❌ Error stack:', error.stack)
+      } else {
+        fastify.log.error('❌ Error details:', String(error))
+      }
+
+      // Log the specific SQL error if it exists
+      if (error && typeof error === 'object' && 'sql' in error) {
+        fastify.log.error('❌ SQL Error:', (error as any).sql)
+      }
+
+      return reply.code(500).send({
+        error: 'Failed to fetch combat data',
+        details: error instanceof Error ? error.message : String(error),
+      })
     }
   })
 

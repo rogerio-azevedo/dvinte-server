@@ -9,6 +9,8 @@ import {
   User,
   Portrait,
   sequelize,
+  CharacterWeapon,
+  Weapon,
 } from '../models/index.js'
 
 // Import utility functions
@@ -90,6 +92,40 @@ const characterSchema = z.object({
       })
     )
     .optional(),
+})
+
+const characterWeaponSchema = z.object({
+  weapon: z.union([z.number(), z.string()]).transform(val => Number(val)),
+  hit: z
+    .union([z.number(), z.string(), z.null()])
+    .transform(val => Number(val || 0)),
+  damage: z
+    .union([z.number(), z.string(), z.null()])
+    .transform(val => Number(val || 0)),
+  element: z
+    .union([z.number(), z.string(), z.null()])
+    .transform(val => Number(val || 0)),
+  crit_mod: z
+    .union([z.number(), z.string(), z.null()])
+    .transform(val => Number(val || 0)),
+  crit_from_mod: z
+    .union([z.number(), z.string(), z.null()])
+    .transform(val => Number(val || 0)),
+  dex_damage: z.union([z.boolean(), z.string(), z.null()]).transform(val => {
+    if (val === null || val === undefined) return false
+    return typeof val === 'string' ? val === 'true' : Boolean(val)
+  }),
+  price: z
+    .union([z.number(), z.string(), z.null()])
+    .transform(val => Number(val || 0)),
+  nickname: z
+    .string()
+    .nullish()
+    .transform(val => val || ''),
+  description: z
+    .string()
+    .nullish()
+    .transform(val => val || ''),
 })
 
 export default async function characterRoutes(fastify: FastifyInstance) {
@@ -327,4 +363,101 @@ export default async function characterRoutes(fastify: FastifyInstance) {
       return reply.code(500).send({ error: 'Failed to delete character' })
     }
   })
+
+  // Add weapon to character
+  fastify.post('/characters/:characterId/weapons', async (request, reply) => {
+    try {
+      const { characterId } = request.params as { characterId: string }
+
+      // Log the raw request body
+      fastify.log.info('Raw request body:', request.body)
+
+      const weaponData = characterWeaponSchema.parse(request.body)
+
+      // Log the parsed data
+      fastify.log.info('Parsed weapon data:', weaponData)
+
+      // Verify if character exists
+      const character = await Character.findByPk(characterId)
+      if (!character) {
+        return reply.code(404).send({ error: 'Character not found' })
+      }
+
+      // Verify if weapon exists
+      const weapon = await Weapon.findByPk(weaponData.weapon)
+      if (!weapon) {
+        return reply.code(404).send({ error: 'Weapon not found' })
+      }
+
+      // Create character weapon association
+      const characterWeapon = await CharacterWeapon.create({
+        character_id: Number(characterId),
+        weapon_id: weaponData.weapon,
+        hit: weaponData.hit,
+        damage: weaponData.damage,
+        element: weaponData.element,
+        crit_mod: weaponData.crit_mod,
+        crit_from_mod: weaponData.crit_from_mod,
+        dex_damage: weaponData.dex_damage,
+        price: weaponData.price,
+        nickname: weaponData.nickname,
+        description: weaponData.description,
+      })
+
+      return reply.code(201).send(characterWeapon)
+    } catch (error) {
+      // Log the detailed error for debugging
+      fastify.log.error('Error adding weapon to character:', error)
+      if (error instanceof z.ZodError) {
+        fastify.log.error(
+          'Validation errors:',
+          JSON.stringify(error.errors, null, 2)
+        )
+        return reply.code(400).send({
+          error: 'Invalid weapon data',
+          details: error.errors,
+        })
+      }
+      return reply
+        .code(500)
+        .send({ error: 'Failed to add weapon to character' })
+    }
+  })
+
+  // Remove weapon from character
+  fastify.delete(
+    '/characters/:characterId/weapons/:weaponId',
+    async (request, reply) => {
+      try {
+        const { characterId, weaponId } = request.params as {
+          characterId: string
+          weaponId: string
+        }
+
+        const result = await CharacterWeapon.destroy({
+          where: {
+            character_id: parseInt(characterId),
+            weapon_id: parseInt(weaponId),
+          },
+        })
+
+        if (result === 0) {
+          return reply
+            .code(404)
+            .send({ error: 'Character weapon association not found' })
+        }
+
+        fastify.log.info(
+          `Weapon ${weaponId} removed from character ${characterId}`
+        )
+        return reply.code(204).send()
+      } catch (error) {
+        fastify.log.error('Error removing weapon from character:', error)
+        return reply.code(500).send({
+          error: 'Failed to remove weapon from character',
+          details: error instanceof Error ? error.message : 'Unknown error',
+        })
+      }
+    }
+  )
 }

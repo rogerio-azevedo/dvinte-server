@@ -158,6 +158,23 @@ interface CharacterTokenAttributes {
   updated_at?: Date
 }
 
+interface CharacterWeaponAttributes {
+  id?: number
+  character_id: number
+  weapon_id: number
+  hit: number
+  damage: number
+  element: number
+  crit_mod: number
+  crit_from_mod: number
+  dex_damage: boolean
+  price: number
+  nickname?: string
+  description?: string
+  created_at?: Date
+  updated_at?: Date
+}
+
 // Model Classes
 class User extends Model<UserAttributes> implements UserAttributes {
   declare id: number
@@ -335,6 +352,26 @@ class CharacterToken
   // Associations
   declare tokens?: Token
   declare character?: Character
+}
+
+class CharacterWeapon
+  extends Model<CharacterWeaponAttributes>
+  implements CharacterWeaponAttributes
+{
+  declare id: number
+  declare character_id: number
+  declare weapon_id: number
+  declare hit: number
+  declare damage: number
+  declare element: number
+  declare crit_mod: number
+  declare crit_from_mod: number
+  declare dex_damage: boolean
+  declare price: number
+  declare nickname: string
+  declare description: string
+  declare readonly created_at: Date
+  declare readonly updated_at: Date
 }
 
 // Initialize models
@@ -765,6 +802,34 @@ CharacterToken.init(
   }
 )
 
+// CharacterWeapon model
+CharacterWeapon.init(
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    character_id: DataTypes.INTEGER,
+    weapon_id: DataTypes.INTEGER,
+    hit: DataTypes.FLOAT,
+    damage: DataTypes.FLOAT,
+    element: DataTypes.FLOAT,
+    crit_mod: DataTypes.FLOAT,
+    crit_from_mod: DataTypes.FLOAT,
+    dex_damage: DataTypes.BOOLEAN,
+    price: DataTypes.FLOAT,
+    nickname: DataTypes.STRING,
+    description: DataTypes.STRING,
+  },
+  {
+    sequelize,
+    modelName: 'CharacterWeapon',
+    tableName: 'character_weapons',
+    underscored: true,
+  }
+)
+
 // Define associations
 Character.belongsTo(User, { foreignKey: 'user_id', as: 'user' })
 Character.belongsTo(Race, { foreignKey: 'race_id', as: 'race' })
@@ -804,5 +869,6 @@ export {
   GameMap,
   Token,
   CharacterToken,
+  CharacterWeapon,
   sequelize,
 }

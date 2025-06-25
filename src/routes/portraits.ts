@@ -1,13 +1,13 @@
 import { FastifyInstance } from 'fastify'
 import { Portrait } from '../models/index.js'
 import {
-  uploadToS3,
-  deleteFromS3,
+  uploadToR2,
+  deleteFromR2,
   generateFileName,
   resizeImage,
-  extractFileNameFromS3Url,
+  extractFileNameFromR2Url,
   UPLOAD_CONFIGS,
-} from '../utils/s3.js'
+} from '../utils/R2.js'
 
 export default async function portraitRoutes(fastify: FastifyInstance) {
   // Get all portraits
@@ -18,31 +18,19 @@ export default async function portraitRoutes(fastify: FastifyInstance) {
       })
 
       const formattedPortraits = portraits.map(portrait => {
+        const portraitData = portrait.toJSON()
+
         return {
-          ...portrait.toJSON(),
-          // url:
-          //   portrait.path && portrait.path.startsWith('http')
-          //     ? portrait.path
-          //     : `https://${S3_BUCKET}.s3.${
-          //         process.env.AWS_REGION
-          //       }.amazonaws.com/portraits/${portrait.path || ''}`,
+          ...portraitData,
+          url: portraitData.path, // URL completa da imagem (R2)
         }
       })
-      console.log('🚀 ~ fastify.get ~ formattedPortraits:', formattedPortraits)
 
-      // const validPortraits = portraits.filter(portrait => portrait.path)
-
-      // const portraitsWithUrls = portraits.map(portrait => {
-      //   const isS3Url = portrait.path && portrait.path.startsWith('http')
-      //   const url = isS3Url
-      //     ? portrait.path
-      //     : `https://${S3_BUCKET}.s3.${
-      //         process.env.AWS_REGION
-      //       }.amazonaws.com/portraits/${portrait.path || ''}`
-      //   return { formattedPortraits }
-      // })
-
-      console.log('🔍 Retrieving portraits from database:', formattedPortraits)
+      console.log(
+        '🔍 Retrieving portraits from database:',
+        formattedPortraits.length,
+        'portraits'
+      )
 
       return reply.send(formattedPortraits)
     } catch (error) {
@@ -148,24 +136,24 @@ export default async function portraitRoutes(fastify: FastifyInstance) {
       }
       console.log('🔍 Metadata do arquivo:', metadata)
 
-      // Upload para S3
-      const s3Url = await uploadToS3(
+      // Upload para R2
+      const r2Url = await uploadToR2(
         'PORTRAITS',
         resizeResult.buffer,
         uniqueFileName,
         resizeResult.mimetype, // Usa o mimetype correto preservando o formato
         metadata
       )
-      console.log('🔍 Upload para S3 concluído:', s3Url)
+      console.log('🔍 Upload para R2 concluído:', r2Url)
 
-      // Salvar no banco com a URL do S3
+      // Salvar no banco com a URL do R2
       const portrait = await Portrait.create({
         name: fileName,
-        path: s3Url, // Agora salva a URL completa do S3
+        path: r2Url, // Agora salva a URL completa do R2
       })
 
       fastify.log.info(
-        `Portrait uploaded to S3: ${fileName} -> ${uniqueFileName}`
+        `Portrait uploaded to R2: ${fileName} -> ${uniqueFileName}`
       )
       return reply.send(portrait)
     } catch (error) {
@@ -194,22 +182,19 @@ export default async function portraitRoutes(fastify: FastifyInstance) {
         return reply.code(404).send({ error: 'Portrait not found' })
       }
 
-      // Delete file from S3 if it's an S3 URL
-      if (
-        portrait.path.includes('s3.') ||
-        portrait.path.includes('amazonaws.com')
-      ) {
+      // Delete file from R2
+      if (portrait.path && portrait.path.startsWith('http')) {
         try {
-          // Extrair nome do arquivo da URL S3
-          const fileName = extractFileNameFromS3Url(portrait.path)
+          // Extrair nome do arquivo da URL R2
+          const fileName = extractFileNameFromR2Url(portrait.path)
 
           if (fileName) {
-            await deleteFromS3('PORTRAITS', fileName)
-            fastify.log.info(`Portrait file deleted from S3: ${fileName}`)
+            await deleteFromR2('PORTRAITS', fileName)
+            fastify.log.info(`Portrait file deleted from R2: ${fileName}`)
           }
-        } catch (s3Error) {
-          fastify.log.warn(`Failed to delete S3 file: ${s3Error}`)
-          // Continua mesmo se falhar no S3 - pelo menos remove do banco
+        } catch (r2Error) {
+          fastify.log.warn(`Failed to delete R2 file: ${r2Error}`)
+          // Continua mesmo se falhar no R2 - pelo menos remove do banco
         }
       }
 

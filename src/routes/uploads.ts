@@ -1,15 +1,15 @@
 import { FastifyInstance } from 'fastify'
 import {
-  uploadToS3,
-  deleteFromS3,
+  uploadToR2,
+  deleteFromR2,
   getPresignedUploadUrl,
   generateFileName,
-  resizeImage,
-  extractFileNameFromS3Url,
+  // resizeImage,
+  extractFileNameFromR2Url,
   getFolderTypeFromUrl,
   FolderType,
   UPLOAD_CONFIGS,
-} from '../utils/s3.js'
+} from '../utils/R2.js'
 
 export default async function uploadsRoutes(fastify: FastifyInstance) {
   // Rota para upload direto de arquivo via multipart
@@ -93,7 +93,7 @@ export default async function uploadsRoutes(fastify: FastifyInstance) {
       }
 
       // Upload para S3
-      const url = await uploadToS3(
+      const url = await uploadToR2(
         folderType,
         finalBuffer,
         fileName,
@@ -172,7 +172,7 @@ export default async function uploadsRoutes(fastify: FastifyInstance) {
       const { url } = request.body
 
       // Extrair informações da URL
-      const fileName = extractFileNameFromS3Url(url)
+      const fileName = extractFileNameFromR2Url(url)
       const folderType = getFolderTypeFromUrl(url)
 
       if (!fileName || !folderType) {
@@ -180,7 +180,7 @@ export default async function uploadsRoutes(fastify: FastifyInstance) {
       }
 
       // Deletar do S3
-      await deleteFromS3(folderType, fileName)
+      await deleteFromR2(folderType, fileName)
 
       reply.send({
         success: true,

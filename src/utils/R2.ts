@@ -2,30 +2,32 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
-  GetObjectCommand,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import crypto from 'crypto'
 import sharp from 'sharp'
 
-// Configuração do bucket S3 com pastas
-export const S3_BUCKET = process.env.AWS_S3_BUCKET_NAME
+// Configuração do bucket R2 com pastas
+export const R2_BUCKET = process.env.R2_BUCKET_NAME
 
-export const S3_FOLDERS = {
+export const R2_FOLDERS = {
   PORTRAITS: 'portraits/',
   TOKENS: 'tokens/',
   MAPS: 'maps/',
   GENERAL: 'general/',
 } as const
 
-export type FolderType = keyof typeof S3_FOLDERS
+export type FolderType = keyof typeof R2_FOLDERS
 
-// Cliente S3
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION,
+// Cliente R2
+const r2Client = new S3Client({
+  region: 'auto',
+  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || 'R2_ACCESS_KEY_ID',
+    secretAccessKey:
+      process.env.R2_ACCESS_SECRET_KEY ||
+      '081f70999b58c94cd04ed6aa467ce71b3853d5dd703c917b9639b17855cab9e0',
   },
 })
 
@@ -104,20 +106,22 @@ export async function resizeImage(
 }
 
 /**
- * Faz upload de um arquivo para S3
+ * Faz upload de um arquivo para R2
  */
-export async function uploadToS3(
+export async function uploadToR2(
   folderType: FolderType,
   file: Buffer,
   fileName: string,
   contentType: string,
   metadata?: Record<string, string>
 ): Promise<string> {
-  const folder = S3_FOLDERS[folderType]
+  console.log('🔍 Iniciando upload para R2...', fileName)
+
+  const folder = R2_FOLDERS[folderType]
   const key = `${folder}${fileName}`
 
   const command = new PutObjectCommand({
-    Bucket: S3_BUCKET,
+    Bucket: R2_BUCKET,
     Key: key,
     Body: file,
     ContentType: contentType,
@@ -125,34 +129,34 @@ export async function uploadToS3(
   })
 
   try {
-    await s3Client.send(command)
-  } catch (error) {
-    console.log('❌ Erro no upload para S3:', error)
+    await r2Client.send(command)
+    console.log('✅ Upload para R2 bem-sucedido!')
+  } catch (error: any) {
+    console.log('❌ Erro no upload para R2:', error.message || error)
     throw error
   }
 
   // Retorna a URL pública do arquivo
-  return `https://${S3_BUCKET}.s3.${
-    process.env.AWS_REGION || 'us-east-1'
-  }.amazonaws.com/${key}`
+  const finalUrl = `${process.env.R2_PUBLIC_URL}/${key}`
+  return finalUrl
 }
 
 /**
- * Remove um arquivo do S3
+ * Remove um arquivo do R2
  */
-export async function deleteFromS3(
+export async function deleteFromR2(
   folderType: FolderType,
   fileName: string
 ): Promise<void> {
-  const folder = S3_FOLDERS[folderType]
+  const folder = R2_FOLDERS[folderType]
   const key = `${folder}${fileName}`
 
   const command = new DeleteObjectCommand({
-    Bucket: S3_BUCKET,
+    Bucket: R2_BUCKET,
     Key: key,
   })
 
-  await s3Client.send(command)
+  await r2Client.send(command)
 }
 
 /**
@@ -164,23 +168,22 @@ export async function getPresignedUploadUrl(
   contentType: string,
   expiresIn: number = 3600 // 1 hora
 ): Promise<string> {
-  const folder = S3_FOLDERS[folderType]
+  const folder = R2_FOLDERS[folderType]
   const key = `${folder}${fileName}`
 
   const command = new PutObjectCommand({
-    Bucket: S3_BUCKET,
+    Bucket: R2_BUCKET,
     Key: key,
     ContentType: contentType,
-    ACL: 'public-read',
   })
 
-  return await getSignedUrl(s3Client, command, { expiresIn })
+  return await getSignedUrl(r2Client, command, { expiresIn })
 }
 
 /**
- * Extrai o nome do arquivo de uma URL S3
+ * Extrai o nome do arquivo de uma URL R2
  */
-export function extractFileNameFromS3Url(url: string): string | null {
+export function extractFileNameFromR2Url(url: string): string | null {
   try {
     const urlParts = new URL(url)
     const pathParts = urlParts.pathname.substring(1).split('/') // Remove barra inicial e separa por /
@@ -194,7 +197,7 @@ export function extractFileNameFromS3Url(url: string): string | null {
  * Determina o tipo de pasta baseado na URL
  */
 export function getFolderTypeFromUrl(url: string): FolderType | null {
-  for (const [key, folder] of Object.entries(S3_FOLDERS)) {
+  for (const [key, folder] of Object.entries(R2_FOLDERS)) {
     if (url.includes(folder)) {
       return key as FolderType
     }

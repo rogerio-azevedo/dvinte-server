@@ -20,6 +20,10 @@ import { initCharacterWeapon } from './CharacterWeapon'
 import { initCharacterArmor } from './CharacterArmor'
 import { initCharacterEquipment } from './CharacterEquipment'
 import { initGameMap } from './GameMap'
+import { initAttribute } from './Attribute'
+import { initAttributeTemp } from './AttributeTemp'
+import { initBaseAttack } from './BaseAttack'
+import { initBaseResist } from './BaseResist'
 import { setupAssociations } from './associations'
 
 // Inicializa a conexão com o banco de dados
@@ -44,6 +48,10 @@ const models: Models = {
   CharacterArmor: initCharacterArmor(sequelize),
   CharacterEquipment: initCharacterEquipment(sequelize),
   GameMap: initGameMap(sequelize),
+  Attribute: initAttribute(sequelize),
+  AttributeTemp: initAttributeTemp(sequelize),
+  BaseAttack: initBaseAttack(sequelize),
+  BaseResist: initBaseResist(sequelize),
 }
 
 // Executa as associações

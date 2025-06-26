@@ -34,6 +34,10 @@ export interface Models {
   CharacterArmor: ModelStatic<any>
   CharacterEquipment: ModelStatic<any>
   GameMap: ModelStatic<any>
+  Attribute: ModelStatic<any>
+  AttributeTemp: ModelStatic<any>
+  BaseAttack: ModelStatic<any>
+  BaseResist: ModelStatic<any>
 }
 
 // Função para configurar as associações

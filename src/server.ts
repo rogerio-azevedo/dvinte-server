@@ -4,32 +4,32 @@ import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
 import multipart from '@fastify/multipart'
 import websocket from '@fastify/websocket'
-import { initWebsocketUtils } from './utils/websocket'
+import { initWebsocketUtils } from './app/shared/utils/websocket'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import type { WebSocket } from 'ws'
 
 // Import models to initialize them
-import './models/index'
-import './schemas/index'
+import './app/infra/db/models/index'
+import './app/infra/db/schemas/index'
 
 // Import routes
-import authRoutes from './routes/auth'
-import characterRoutes from './routes/characters'
-import combatRoutes from './routes/combat'
-import mapRoutes from './routes/maps'
-import charTokenRoutes from './routes/chartokens'
-import initiativeRoutes from './routes/initiatives'
-import tokenRoutes from './routes/tokens'
-import portraitRoutes from './routes/portraits'
-import monsterRoutes from './routes/monsters'
-import uploadRoutes from './routes/uploads'
-import armorRoutes from './routes/armor'
-import weaponRoutes from './routes/weapon'
-import equipmentRoutes from './routes/equipment'
-import raceRoutes from './routes/race'
-import alignmentRoutes from './routes/alignment'
-import divinityRoutes from './routes/divinity'
+import authRoutes from './app/infra/http/routes/auth'
+import characterRoutes from './app/infra/http/routes/characters'
+import combatRoutes from './app/infra/http/routes/combat'
+import mapRoutes from './app/infra/http/routes/maps'
+import charTokenRoutes from './app/infra/http/routes/chartokens'
+import initiativeRoutes from './app/infra/http/routes/initiatives'
+import tokenRoutes from './app/infra/http/routes/tokens'
+import portraitRoutes from './app/infra/http/routes/portraits'
+import monsterRoutes from './app/infra/http/routes/monsters'
+import uploadRoutes from './app/infra/http/routes/uploads'
+import armorRoutes from './app/infra/http/routes/armor'
+import weaponRoutes from './app/infra/http/routes/weapon'
+import equipmentRoutes from './app/infra/http/routes/equipment'
+import raceRoutes from './app/infra/http/routes/race'
+import alignmentRoutes from './app/infra/http/routes/alignment'
+import divinityRoutes from './app/infra/http/routes/divinity'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -191,7 +191,7 @@ async function connectDatabases() {
 
     // PostgreSQL connection (Sequelize)
     fastify.log.info('🔌 Connecting to PostgreSQL...')
-    const { default: database } = await import('./database/index')
+    const { default: database } = await import('./app/infra/db/index')
     await database.authenticate()
     fastify.log.info('✅ PostgreSQL connected successfully')
   } catch (error) {

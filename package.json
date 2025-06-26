@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "tsup",
     "start": "node dist/server.js",
     "lint": "eslint src/**/*.ts",
     "test": "vitest",
@@ -21,14 +21,14 @@
   "author": "",
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@swc/core": "^1.12.7",
     "@types/bcryptjs": "^3.0.0",
     "@types/multer": "^1.4.13",
     "@types/node": "^24.0.4",
     "@types/pg": "^8.15.4",
     "@types/ws": "^8.18.1",
     "sequelize-cli": "^6.6.3",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.20.1",
+    "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {

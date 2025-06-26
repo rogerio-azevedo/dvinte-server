@@ -3,7 +3,6 @@ import { config } from 'dotenv'
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
 import multipart from '@fastify/multipart'
-import staticFiles from '@fastify/static'
 import websocket from '@fastify/websocket'
 import { initWebsocketUtils } from './utils/websocket'
 import { fileURLToPath } from 'url'
@@ -74,19 +73,6 @@ async function registerPlugins() {
       limits: {
         fileSize: 10 * 1024 * 1024, // 10MB
       },
-    })
-
-    // Static files - Portraits
-    await fastify.register(staticFiles, {
-      root: join(__dirname, '..', 'tmp', 'uploads', 'portraits'),
-      prefix: '/portrait-files/',
-    })
-
-    // Static files - Tokens
-    await fastify.register(staticFiles, {
-      root: join(__dirname, '..', 'tmp', 'uploads', 'tokens'),
-      prefix: '/token-files/',
-      decorateReply: false,
     })
 
     // WebSocket plugin
@@ -205,7 +191,7 @@ async function connectDatabases() {
 
     // PostgreSQL connection (Sequelize)
     fastify.log.info('🔌 Connecting to PostgreSQL...')
-    const { default: database } = await import('./database/index.js')
+    const { default: database } = await import('./database/index')
     await database.authenticate()
     fastify.log.info('✅ PostgreSQL connected successfully')
   } catch (error) {
@@ -250,9 +236,6 @@ async function start() {
     fastify.log.info('🔗 Connecting to databases...')
     await connectDatabases()
 
-    // Initialize websocket utilities for controllers
-    initWebsocketUtils(fastify)
-
     const port = Number(process.env.PORT) || 9600
     const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost'
 
@@ -264,38 +247,20 @@ async function start() {
     fastify.log.info(
       `🔌 WebSocket ready for connections on ws://${host}:${port}/ws`
     )
-    fastify.log.info('✅ Server startup completed successfully!')
   } catch (error) {
-    fastify.log.error('❌ Server startup failed:', error)
-
-    // Log stack trace for better debugging
+    fastify.log.error('❌ Server startup failed:')
+    console.error('Full error:', error)
     if (error instanceof Error) {
+      fastify.log.error('Error name:', error.name)
+      fastify.log.error('Error message:', error.message)
       fastify.log.error('Stack trace:', error.stack)
     }
-
-    // Try to close fastify gracefully
-    try {
-      await fastify.close()
-    } catch (closeError) {
-      fastify.log.error('Error closing fastify:', closeError)
-    }
-
     process.exit(1)
   }
 }
 
-// Handle graceful shutdown
-process.on('SIGTERM', async () => {
-  fastify.log.info('🛑 SIGTERM received, shutting down gracefully')
-  await fastify.close()
-  process.exit(0)
-})
-
-process.on('SIGINT', async () => {
-  fastify.log.info('🛑 SIGINT received, shutting down gracefully')
-  await fastify.close()
-  process.exit(0)
-})
+// Initialize WebSocket utils
+initWebsocketUtils(fastify)
 
 // Start the server
 start()

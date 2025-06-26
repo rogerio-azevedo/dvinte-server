@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify'
 import { Initiative } from '../../db/schemas/index'
+import { saveMessage } from '../../../shared/utils/websocket'
 
 export default async function initiativeRoutes(fastify: FastifyInstance) {
   // Get all initiatives
@@ -38,8 +39,11 @@ export default async function initiativeRoutes(fastify: FastifyInstance) {
         updatedAt: newInitiative.updatedAt,
       }
 
-      // @ts-ignore - fastify.io is added by the plugin
-      fastify.io.emit('init.message', message)
+      // Usar a função saveMessage para broadcast
+      saveMessage({
+        ...message,
+        type: 'init.message',
+      })
 
       fastify.log.info(`Initiative created for user ${user}: ${initiative}`)
       return reply.send(newInitiative)
@@ -54,9 +58,11 @@ export default async function initiativeRoutes(fastify: FastifyInstance) {
     try {
       const result = await Initiative.deleteMany({})
 
-      // Emit Socket.IO event to clear initiatives for all clients
-      // @ts-ignore - fastify.io is added by the plugin
-      fastify.io.emit('init.clear', {})
+      // Usar a função saveMessage para broadcast
+      saveMessage({
+        type: 'init.clear',
+        message: 'Initiatives cleared',
+      })
 
       fastify.log.info(`Cleared ${result.deletedCount} initiatives`)
       return reply.send({
@@ -80,9 +86,11 @@ export default async function initiativeRoutes(fastify: FastifyInstance) {
         return reply.code(404).send({ error: 'Initiative not found' })
       }
 
-      // Emit Socket.IO event
-      // @ts-ignore - fastify.io is added by the plugin
-      fastify.io.emit('init.delete', { id })
+      // Usar a função saveMessage para broadcast
+      saveMessage({
+        type: 'init.delete',
+        id,
+      })
 
       fastify.log.info(`Initiative deleted: ${id}`)
       return reply.send(deletedInitiative)

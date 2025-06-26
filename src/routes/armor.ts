@@ -57,7 +57,10 @@ export default async function armorRoutes(fastify: FastifyInstance) {
     try {
       const armorSchema = z.object({
         name: z.string().min(1),
-        type: z.union([z.number(), z.string()]).transform(val => Number(val)),
+        type: z.union([z.number(), z.string()]).transform(val => {
+          const num = Number(val)
+          return isNaN(num) ? 1 : num // Valor padrão 1 se for NaN
+        }),
         bonus: z.union([z.number(), z.string()]).transform(val => Number(val)),
         dexterity: z
           .union([z.number(), z.string()])

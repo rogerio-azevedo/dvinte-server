@@ -94,8 +94,17 @@ export interface WeaponAttributes {
 export interface ArmorAttributes {
   id?: number
   name: string
-  ac?: number
-  type?: string
+  type: number
+  bonus: number
+  dexterity: number
+  penalty: number
+  magic: number
+  displacement_s: number
+  displacement_m: number
+  weight: number
+  price: number
+  book: string
+  version: string
   created_at?: Date
   updated_at?: Date
 }

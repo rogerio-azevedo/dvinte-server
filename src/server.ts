@@ -16,7 +16,6 @@ import './schemas/index.js'
 // Import routes
 import authRoutes from './routes/auth.js'
 import characterRoutes from './routes/characters.js'
-import gameDataRoutes from './routes/game-data.js'
 import combatRoutes from './routes/combat.js'
 import mapRoutes from './routes/maps.js'
 import charTokenRoutes from './routes/chartokens.js'
@@ -25,6 +24,12 @@ import tokenRoutes from './routes/tokens.js'
 import portraitRoutes from './routes/portraits.js'
 import monsterRoutes from './routes/monsters.js'
 import uploadRoutes from './routes/uploads.js'
+import armorRoutes from './routes/armor.js'
+import weaponRoutes from './routes/weapon.js'
+import equipmentRoutes from './routes/equipment.js'
+import raceRoutes from './routes/race.js'
+import alignmentRoutes from './routes/alignment.js'
+import divinityRoutes from './routes/divinity.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -174,39 +179,22 @@ async function start() {
     await registerHealthRoutes()
 
     fastify.log.info('📋 Registering API routes FIRST...')
-
-    fastify.log.info('  - Auth routes...')
     await fastify.register(authRoutes)
-
-    fastify.log.info('  - Character routes...')
     await fastify.register(characterRoutes)
-
-    fastify.log.info('  - Game data routes...')
-    await fastify.register(gameDataRoutes)
-
-    fastify.log.info('  - Combat routes...')
     await fastify.register(combatRoutes)
-
-    fastify.log.info('  - Map routes...')
     await fastify.register(mapRoutes)
-
-    fastify.log.info('  - Character token routes...')
     await fastify.register(charTokenRoutes)
-
-    fastify.log.info('  - Initiative routes...')
     await fastify.register(initiativeRoutes)
-
-    fastify.log.info('  - Token routes...')
     await fastify.register(tokenRoutes)
-
-    fastify.log.info('  - Portrait routes...')
     await fastify.register(portraitRoutes)
-
-    fastify.log.info('  - Monster routes...')
     await fastify.register(monsterRoutes)
-
-    fastify.log.info('  - Upload routes (S3)...')
     await fastify.register(uploadRoutes)
+    await fastify.register(armorRoutes)
+    await fastify.register(weaponRoutes)
+    await fastify.register(equipmentRoutes)
+    await fastify.register(raceRoutes)
+    await fastify.register(alignmentRoutes)
+    await fastify.register(divinityRoutes)
 
     fastify.log.info('🔗 Connecting to databases...')
     await connectDatabases()

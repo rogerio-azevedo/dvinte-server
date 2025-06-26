@@ -110,11 +110,21 @@ export interface ArmorAttributes {
 }
 
 export interface EquipmentAttributes {
-  id?: number
+  id: number
   name: string
-  description?: string
-  created_at?: Date
-  updated_at?: Date
+  description: string | null
+  str_temp: number
+  dex_temp: number
+  con_temp: number
+  int_temp: number
+  wis_temp: number
+  cha_temp: number
+  price: number
+  weight: number
+  book: string | null
+  version: string | null
+  created_at: Date
+  updated_at: Date
 }
 
 export interface PortraitAttributes {

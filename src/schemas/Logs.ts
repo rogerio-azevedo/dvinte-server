@@ -1,6 +1,18 @@
-import mongoose from 'mongoose'
+import mongoose, { Schema, Document } from 'mongoose'
 
-const LogsSchema = new mongoose.Schema(
+export interface ILogs extends Document {
+  id: number
+  user_id: number
+  user: string
+  message: string
+  result: number
+  type: number
+  isCrit?: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+const LogsSchema = new Schema<ILogs>(
   {
     id: {
       type: Number,
@@ -36,4 +48,4 @@ const LogsSchema = new mongoose.Schema(
   }
 )
 
-export default mongoose.model('Logs', LogsSchema)
+export default mongoose.model<ILogs>('Logs', LogsSchema)

@@ -2,10 +2,11 @@ import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { Logs, Initiative } from '../schemas/index'
 import { saveMessage } from '../utils/websocket'
-import models from '../models'
-import getSize from '../util/getSize'
-import getGender from '../util/getGender'
-import getModifier from '../util/getModifier'
+import models from '../models/index'
+
+import { getSize } from '../utils/getSize'
+import { getGender } from '../utils/getGender'
+import { getModifier } from '../utils/getModifier'
 import { format, subDays, addDays } from 'date-fns'
 
 const mockCombatMessages = [
@@ -19,12 +20,25 @@ const mockCombatMessages = [
 ]
 
 export default async function combatRoutes(fastify: FastifyInstance) {
+  // Get character data for combat (alias for backward compatibility)
+  fastify.get('/combats/characters/:userId', async (request, reply) => {
+    // Redirect to the main combat endpoint
+    const { userId } = request.params as { userId: string }
+    return fastify.inject({
+      method: 'GET',
+      url: `/combats/${userId}`,
+    })
+  })
+
   // Get combat data for a specific user
   fastify.get('/combats/:userId', async (request, reply) => {
     try {
       const { userId } = request.params as { userId: string }
 
-      fastify.log.info(`Searching for character with user_id: ${userId}`)
+      if (!models || !models.Character) {
+        fastify.log.error('Models not properly initialized')
+        throw new Error('Models not properly initialized')
+      }
 
       const char = await models.Character.findOne({
         where: {
@@ -151,8 +165,18 @@ export default async function combatRoutes(fastify: FastifyInstance) {
           .send({ error: 'No active character found for this user' })
       }
 
+      fastify.log.info('Character found:', {
+        id: char.id,
+        name: char.name,
+        user_id: char.user_id,
+      })
+
+      fastify.log.info('Character classes:', char.classes)
+
       const levels =
         char.classes?.map((l: any) => l.CharacterClass?.level) || []
+
+      fastify.log.info('Character levels:', levels)
 
       const baseAtack = await models.BaseAttack.findAll({
         where: { level: levels },
@@ -160,11 +184,15 @@ export default async function combatRoutes(fastify: FastifyInstance) {
         attributes: ['level', 'low', 'medium', 'high'],
       })
 
+      fastify.log.info('Base attack found:', baseAtack)
+
       const baseResist = await models.BaseResist.findAll({
         where: { level: levels },
         raw: true,
         attributes: ['level', 'low', 'high'],
       })
+
+      fastify.log.info('Base resist found:', baseResist)
 
       // Usar as mesmas propriedades do controller original para manter compatibilidade
       interface CharData {
@@ -364,24 +392,24 @@ export default async function combatRoutes(fastify: FastifyInstance) {
       }
 
       const charData: CharData = {
-        Cod: char.id,
-        Name: char.name?.toUpperCase() || '',
-        User: char.user?.name?.toUpperCase() || '',
-        Level: char.level || 0,
-        Race: char.race?.name?.toUpperCase() || '',
-        Health: char.health || 0,
-        HealthNow: char.health_now || 0,
-        Age: char.age || 0,
-        Gender: getGender(char.gender || 0),
-        Size: getSize(char.size || 0),
+        Cod: char?.id || 0,
+        Name: char?.name?.toUpperCase() || '',
+        User: char?.user?.name?.toUpperCase() || '',
+        Level: char?.level || 0,
+        Race: char?.race?.name?.toUpperCase() || '',
+        Health: char?.health || 0,
+        HealthNow: char?.health_now || 0,
+        Age: char?.age || 0,
+        Gender: getGender(char?.gender || 0),
+        Size: getSize(char?.size || 0),
 
-        Height: char.height || '',
-        Weight: char.weight || '',
-        Eye: char.eye?.toUpperCase() || '',
-        Hair: char.hair?.toUpperCase() || '',
-        Skin: char.skin?.toUpperCase() || '',
+        Height: char?.height || '',
+        Weight: char?.weight || '',
+        Eye: char?.eye?.toUpperCase() || '',
+        Hair: char?.hair?.toUpperCase() || '',
+        Skin: char?.skin?.toUpperCase() || '',
 
-        Exp: char.exp || 0,
+        Exp: char?.exp || 0,
         Alig: char.alignment?.name?.toUpperCase() || '',
         Divin: char.divinity?.name?.toUpperCase() || '',
 
@@ -525,16 +553,29 @@ export default async function combatRoutes(fastify: FastifyInstance) {
       return reply.send(charData)
     } catch (error) {
       fastify.log.error('❌ Error fetching combat data:', error)
+
+      // Enhanced error logging
       if (error instanceof Error) {
+        fastify.log.error('❌ Error name:', error.name)
         fastify.log.error('❌ Error message:', error.message)
         fastify.log.error('❌ Error stack:', error.stack)
       } else {
+        fastify.log.error('❌ Raw error:', error)
+        fastify.log.error('❌ Error type:', typeof error)
         fastify.log.error('❌ Error details:', String(error))
       }
 
       // Log the specific SQL error if it exists
-      if (error && typeof error === 'object' && 'sql' in error) {
-        fastify.log.error('❌ SQL Error:', (error as any).sql)
+      if (error && typeof error === 'object') {
+        if ('sql' in error) {
+          fastify.log.error('❌ SQL Error:', (error as any).sql)
+        }
+        if ('original' in error) {
+          fastify.log.error('❌ Original Error:', (error as any).original)
+        }
+        if ('parent' in error) {
+          fastify.log.error('❌ Parent Error:', (error as any).parent)
+        }
       }
 
       return reply.code(500).send({

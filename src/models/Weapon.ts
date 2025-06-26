@@ -20,6 +20,14 @@ class Weapon extends Model<WeaponAttributes> implements WeaponAttributes {
   declare version: string
   declare readonly created_at: Date
   declare readonly updated_at: Date
+
+  static associate(models: any): void {
+    this.belongsToMany(models.Character, {
+      through: models.CharacterWeapon,
+      foreignKey: 'weapon_id',
+      as: 'characters',
+    })
+  }
 }
 
 export function initWeapon(sequelize: Sequelize) {

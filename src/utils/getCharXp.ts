@@ -1,4 +1,4 @@
-export default function getCharXp(lv) {
+export const getCharXp = (lv: number): number => {
   let exp = 0
 
   switch (lv) {

@@ -24,6 +24,13 @@ class AttributeTemp extends Model<AttributeTempAttributes> {
   declare charisma: number
   declare readonly created_at: Date
   declare readonly updated_at: Date
+
+  static associate(models: any): void {
+    this.belongsTo(models.Character, {
+      foreignKey: 'character_id',
+      as: 'character',
+    })
+  }
 }
 
 export const initAttributeTemp = (

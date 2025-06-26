@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify'
-import { Initiative } from '../schemas/index.js'
+import { Initiative } from '../schemas/index'
 
 export default async function initiativeRoutes(fastify: FastifyInstance) {
   // Get all initiatives

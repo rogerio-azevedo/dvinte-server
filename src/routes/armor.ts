@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import models from '../models'
+import models from '../models/index'
 
 const armorSchema = z.object({
   name: z.string().min(1),

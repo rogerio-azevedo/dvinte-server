@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify'
-import models from '../models'
+import models from '../models/index'
 import {
   uploadToR2,
   deleteFromR2,

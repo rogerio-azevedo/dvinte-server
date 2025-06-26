@@ -17,6 +17,14 @@ class Armor extends Model<ArmorAttributes> implements ArmorAttributes {
   declare version: string
   declare readonly created_at: Date
   declare readonly updated_at: Date
+
+  static associate(models: any): void {
+    this.belongsToMany(models.Character, {
+      through: models.CharacterArmor,
+      foreignKey: 'armor_id',
+      as: 'characters',
+    })
+  }
 }
 
 export function initArmor(sequelize: Sequelize) {

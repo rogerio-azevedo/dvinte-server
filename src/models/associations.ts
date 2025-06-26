@@ -58,6 +58,74 @@ export function setupAssociations(models: Models) {
     as: 'portrait',
   })
 
+  // Class associations
+  models.Character.belongsToMany(models.Class, {
+    through: models.CharacterClass,
+    foreignKey: 'character_id',
+    as: 'classes',
+  })
+  models.Class.belongsToMany(models.Character, {
+    through: models.CharacterClass,
+    foreignKey: 'class_id',
+    as: 'characters',
+  })
+
+  // Armor associations
+  models.Character.belongsToMany(models.Armor, {
+    through: models.CharacterArmor,
+    foreignKey: 'character_id',
+    as: 'armors',
+  })
+  models.Armor.belongsToMany(models.Character, {
+    through: models.CharacterArmor,
+    foreignKey: 'armor_id',
+    as: 'characters',
+  })
+
+  // Weapon associations
+  models.Character.belongsToMany(models.Weapon, {
+    through: models.CharacterWeapon,
+    foreignKey: 'character_id',
+    as: 'weapons',
+  })
+  models.Weapon.belongsToMany(models.Character, {
+    through: models.CharacterWeapon,
+    foreignKey: 'weapon_id',
+    as: 'characters',
+  })
+
+  // Equipment associations
+  models.Character.belongsToMany(models.Equipment, {
+    through: models.CharacterEquipment,
+    foreignKey: 'character_id',
+    as: 'equipments',
+  })
+  models.Equipment.belongsToMany(models.Character, {
+    through: models.CharacterEquipment,
+    foreignKey: 'equipment_id',
+    as: 'characters',
+  })
+
+  // Attribute associations
+  models.Character.hasOne(models.Attribute, {
+    foreignKey: 'character_id',
+    as: 'attribute',
+  })
+  models.Attribute.belongsTo(models.Character, {
+    foreignKey: 'character_id',
+    as: 'character',
+  })
+
+  // AttributeTemp associations
+  models.Character.hasOne(models.AttributeTemp, {
+    foreignKey: 'character_id',
+    as: 'attribute_temp',
+  })
+  models.AttributeTemp.belongsTo(models.Character, {
+    foreignKey: 'character_id',
+    as: 'character',
+  })
+
   // User associations
   models.User.hasMany(models.Character, {
     foreignKey: 'user_id',

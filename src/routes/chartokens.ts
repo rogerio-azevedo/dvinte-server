@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify'
-import models from '../models'
+import models from '../models/index'
+import { updateToken } from '../utils/websocket.js'
 
 export default async function charTokenRoutes(fastify: FastifyInstance) {
   // Get all character tokens
@@ -240,11 +241,9 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         updated_at: t.updated_at,
       }))
 
-      // Emit Socket.IO event to sync with all connected users
-      // @ts-ignore - fastify.io is added by the plugin
-      fastify.io.emit('token.message', tokens)
-
-      fastify.log.info(`Token ${id} updated and broadcasted via Socket.IO`)
+      // Broadcast token update via WebSocket to sync with all connected users
+      updateToken(tokens)
+      fastify.log.info(`Token ${id} updated and broadcasted via WebSocket`)
       return reply.send(characterToken)
     } catch (error) {
       fastify.log.error(error)
@@ -327,9 +326,9 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         updated_at: t.updated_at,
       }))
 
-      // Emit Socket.IO event to sync with all connected users
-      // @ts-ignore - fastify.io is added by the plugin
-      fastify.io.emit('token.message', tokens)
+      // Broadcast token update via WebSocket to sync with all connected users
+      updateToken(tokens)
+      fastify.log.info(`Token ${id} updated and broadcasted via WebSocket`)
 
       return reply.send(characterToken)
     } catch (error) {

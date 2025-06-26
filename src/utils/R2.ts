@@ -24,16 +24,12 @@ const r2Client = new S3Client({
   region: 'auto',
   endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
   credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID || 'R2_ACCESS_KEY_ID',
-    secretAccessKey:
-      process.env.R2_ACCESS_SECRET_KEY ||
-      '081f70999b58c94cd04ed6aa467ce71b3853d5dd703c917b9639b17855cab9e0',
+    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.R2_ACCESS_SECRET_KEY!,
   },
 })
 
-/**
- * Gera um nome único para o arquivo
- */
+//Gera um nome único para o arquivo
 export function generateFileName(
   originalName: string,
   prefix?: string
@@ -46,9 +42,7 @@ export function generateFileName(
   return `${baseName}${timestamp}_${randomHash}.${extension}`
 }
 
-/**
- * Redimensiona uma imagem mantendo a proporção e formato original
- */
+//Redimensiona uma imagem mantendo a proporção e formato original
 export async function resizeImage(
   buffer: Buffer,
   maxWidth: number = 3500,
@@ -141,9 +135,7 @@ export async function uploadToR2(
   return finalUrl
 }
 
-/**
- * Remove um arquivo do R2
- */
+//Remove um arquivo do R2
 export async function deleteFromR2(
   folderType: FolderType,
   fileName: string
@@ -159,9 +151,7 @@ export async function deleteFromR2(
   await r2Client.send(command)
 }
 
-/**
- * Gera uma URL assinada para upload direto do frontend
- */
+//Gera uma URL assinada para upload direto do frontend
 export async function getPresignedUploadUrl(
   folderType: FolderType,
   fileName: string,
@@ -180,9 +170,7 @@ export async function getPresignedUploadUrl(
   return await getSignedUrl(r2Client, command, { expiresIn })
 }
 
-/**
- * Extrai o nome do arquivo de uma URL R2
- */
+//Extrai o nome do arquivo de uma URL R2
 export function extractFileNameFromR2Url(url: string): string | null {
   try {
     const urlParts = new URL(url)
@@ -193,9 +181,7 @@ export function extractFileNameFromR2Url(url: string): string | null {
   }
 }
 
-/**
- * Determina o tipo de pasta baseado na URL
- */
+//Determina o tipo de pasta baseado na URL
 export function getFolderTypeFromUrl(url: string): FolderType | null {
   for (const [key, folder] of Object.entries(R2_FOLDERS)) {
     if (url.includes(folder)) {
@@ -205,9 +191,7 @@ export function getFolderTypeFromUrl(url: string): FolderType | null {
   return null
 }
 
-/**
- * Configurações específicas para cada tipo de arquivo
- */
+//Configurações específicas para cada tipo de arquivo
 export const UPLOAD_CONFIGS = {
   PORTRAITS: {
     maxSize: 20 * 1024 * 1024, // 10MB

@@ -1,15 +1,44 @@
-import { Model, Sequelize, DataTypes } from 'sequelize'
-import { EquipmentAttributes } from './interfaces'
+import {
+  Model,
+  Sequelize,
+  DataTypes,
+  InferAttributes,
+  InferCreationAttributes,
+  CreationOptional,
+  NonAttribute,
+} from 'sequelize'
+import type Character from './character'
 
-class Equipment
-  extends Model<EquipmentAttributes>
-  implements EquipmentAttributes
-{
-  declare id: number
+export default class Equipment extends Model<
+  InferAttributes<Equipment>,
+  InferCreationAttributes<Equipment>
+> {
+  declare id: CreationOptional<number>
   declare name: string
-  declare description: string
-  declare readonly created_at: Date
-  declare readonly updated_at: Date
+  declare description: string | null
+  declare str_temp: number
+  declare dex_temp: number
+  declare con_temp: number
+  declare int_temp: number
+  declare wis_temp: number
+  declare cha_temp: number
+  declare price: number
+  declare weight: number
+  declare book: string | null
+  declare version: string | null
+  declare readonly created_at: CreationOptional<Date>
+  declare readonly updated_at: CreationOptional<Date>
+
+  // Associations
+  declare characters?: NonAttribute<Character[]>
+
+  static associate(models: any): void {
+    this.belongsToMany(models.Character, {
+      through: models.CharacterEquipment,
+      foreignKey: 'equipment_id',
+      as: 'characters',
+    })
+  }
 }
 
 export function initEquipment(sequelize: Sequelize) {
@@ -25,6 +54,42 @@ export function initEquipment(sequelize: Sequelize) {
         allowNull: false,
       },
       description: DataTypes.STRING,
+      str_temp: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      dex_temp: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      con_temp: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      int_temp: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      wis_temp: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      cha_temp: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      price: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      weight: {
+        type: DataTypes.FLOAT,
+        defaultValue: 0,
+      },
+      book: DataTypes.STRING,
+      version: DataTypes.STRING,
+      created_at: DataTypes.DATE,
+      updated_at: DataTypes.DATE,
     },
     {
       sequelize,

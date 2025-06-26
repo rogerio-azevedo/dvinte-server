@@ -10,6 +10,14 @@ class Class extends Model<ClassAttributes> implements ClassAttributes {
   declare will: string
   declare readonly created_at: Date
   declare readonly updated_at: Date
+
+  static associate(models: any): void {
+    this.belongsToMany(models.Character, {
+      through: 'character_classes',
+      foreignKey: 'class_id',
+      as: 'characters',
+    })
+  }
 }
 
 export function initClass(sequelize: Sequelize) {

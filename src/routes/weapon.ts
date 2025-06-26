@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import models from '../models'
+import models from '../models/index'
 
 export default async function weaponRoutes(fastify: FastifyInstance) {
   // Get all weapons

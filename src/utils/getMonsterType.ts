@@ -1,4 +1,4 @@
-export default function getMonsterType(type) {
+export const getMonsterType = (type: number): string => {
   let text = ''
 
   switch (type) {

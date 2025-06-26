@@ -91,25 +91,25 @@ class Character extends Model<CharacterAttributes> {
     })
 
     this.belongsToMany(models.Class, {
-      through: 'character_classes',
+      through: models.CharacterClass,
       foreignKey: 'character_id',
       as: 'classes',
     })
 
     this.belongsToMany(models.Armor, {
-      through: 'character_armors',
+      through: models.CharacterArmor,
       foreignKey: 'character_id',
       as: 'armors',
     })
 
     this.belongsToMany(models.Weapon, {
-      through: 'character_weapons',
+      through: models.CharacterWeapon,
       foreignKey: 'character_id',
       as: 'weapons',
     })
 
     this.belongsToMany(models.Equipment, {
-      through: 'character_equipments',
+      through: models.CharacterEquipment,
       foreignKey: 'character_id',
       as: 'equipments',
     })

@@ -4,32 +4,33 @@ import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
 import multipart from '@fastify/multipart'
 import staticFiles from '@fastify/static'
-import fastifyIO from 'fastify-socket.io'
-import { initWebsocketUtils } from './utils/websocket.js'
+import websocket from '@fastify/websocket'
+import { initWebsocketUtils } from './utils/websocket'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import type { WebSocket } from 'ws'
 
 // Import models to initialize them
-import './models/index.js'
-import './schemas/index.js'
+import './models/index'
+import './schemas/index'
 
 // Import routes
-import authRoutes from './routes/auth.js'
-import characterRoutes from './routes/characters.js'
-import combatRoutes from './routes/combat.js'
-import mapRoutes from './routes/maps.js'
-import charTokenRoutes from './routes/chartokens.js'
-import initiativeRoutes from './routes/initiatives.js'
-import tokenRoutes from './routes/tokens.js'
-import portraitRoutes from './routes/portraits.js'
-import monsterRoutes from './routes/monsters.js'
-import uploadRoutes from './routes/uploads.js'
-import armorRoutes from './routes/armor.js'
-import weaponRoutes from './routes/weapon.js'
-import equipmentRoutes from './routes/equipment.js'
-import raceRoutes from './routes/race.js'
-import alignmentRoutes from './routes/alignment.js'
-import divinityRoutes from './routes/divinity.js'
+import authRoutes from './routes/auth'
+import characterRoutes from './routes/characters'
+import combatRoutes from './routes/combat'
+import mapRoutes from './routes/maps'
+import charTokenRoutes from './routes/chartokens'
+import initiativeRoutes from './routes/initiatives'
+import tokenRoutes from './routes/tokens'
+import portraitRoutes from './routes/portraits'
+import monsterRoutes from './routes/monsters'
+import uploadRoutes from './routes/uploads'
+import armorRoutes from './routes/armor'
+import weaponRoutes from './routes/weapon'
+import equipmentRoutes from './routes/equipment'
+import raceRoutes from './routes/race'
+import alignmentRoutes from './routes/alignment'
+import divinityRoutes from './routes/divinity'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -49,6 +50,9 @@ const fastify = Fastify({
         },
 })
 
+// WebSocket clients management
+const wsClients = new Set<WebSocket>()
+
 // Register plugins
 async function registerPlugins() {
   try {
@@ -56,6 +60,8 @@ async function registerPlugins() {
     await fastify.register(cors, {
       origin: true,
       credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
     })
 
     // JWT
@@ -83,13 +89,58 @@ async function registerPlugins() {
       decorateReply: false,
     })
 
-    // Socket.IO plugin (removido websocket plugin para evitar conflitos)
-    await fastify.register(fastifyIO, {
-      cors: {
-        origin: true,
-        credentials: true,
-      },
-      transports: ['polling', 'websocket'],
+    // WebSocket plugin
+    await fastify.register(websocket)
+
+    // WebSocket route
+    fastify.register(async function (fastify) {
+      fastify.get('/ws', { websocket: true }, (connection, req) => {
+        wsClients.add(connection)
+
+        fastify.log.info(
+          `🔌 WebSocket client connected. Total clients: ${wsClients.size}`
+        )
+
+        connection.on('message', (message: Buffer) => {
+          try {
+            const data = JSON.parse(message.toString())
+            fastify.log.info('📨 WebSocket message received:', data)
+
+            // Broadcast message to all connected clients
+            wsClients.forEach(client => {
+              if (client.readyState === 1) {
+                // OPEN
+                client.send(JSON.stringify(data))
+              }
+            })
+          } catch (error) {
+            fastify.log.error('❌ Error processing WebSocket message:', error)
+          }
+        })
+
+        connection.on('close', () => {
+          wsClients.delete(connection)
+          fastify.log.info(
+            `🔌 WebSocket client disconnected. Total clients: ${wsClients.size}`
+          )
+        })
+
+        connection.on('error', (error: Error) => {
+          fastify.log.error('❌ WebSocket error:', error)
+          wsClients.delete(connection)
+        })
+      })
+    })
+
+    // Add broadcast function to fastify instance
+    fastify.decorate('broadcast', (event: string, data: any) => {
+      const message = JSON.stringify({ event, data })
+      wsClients.forEach(client => {
+        if (client.readyState === 1) {
+          // OPEN
+          client.send(message)
+        }
+      })
     })
   } catch (error) {
     fastify.log.error('❌ Error registering plugins:', error)
@@ -199,7 +250,8 @@ async function start() {
     fastify.log.info('🔗 Connecting to databases...')
     await connectDatabases()
 
-    // Socket.IO will handle /socket.io/* routes automatically
+    // Initialize websocket utilities for controllers
+    initWebsocketUtils(fastify)
 
     const port = Number(process.env.PORT) || 9600
     const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost'
@@ -207,94 +259,11 @@ async function start() {
     fastify.log.info(`🌐 Starting server on ${host}:${port}...`)
     await fastify.listen({ port, host })
 
-    // Socket.IO setup - wait for server to be ready (following documentation pattern)
-    fastify.ready().then(() => {
-      fastify.log.info('🔌 Setting up Socket.IO connection handlers...')
-
-      // Initialize websocket utilities for controllers
-      initWebsocketUtils(fastify)
-
-      // @ts-ignore - fastify.io is added by the plugin
-      fastify.io.on('connection', (socket: any) => {
-        fastify.log.info(`🔌 Socket.IO client connected: ${socket.id}`)
-
-        // Send current state to new client
-        // @ts-ignore
-        fastify.io.emit('CONNECTED_USERS', [])
-        // @ts-ignore
-        fastify.io.emit('PREVIOUS_MESSAGES', [])
-
-        // Handle user connection
-        socket.on('USER_CONNECTED', (user: any) => {
-          fastify.log.info(`👤 User connected: ${user.name || user.id}`)
-          // @ts-ignore
-          fastify.io.emit('USER_CONNECTED', user)
-        })
-
-        // Handle user disconnection
-        socket.on('USER_DISCONNECTED', (user: any) => {
-          fastify.log.info(`👤 User disconnected: ${user.name || user.id}`)
-          // @ts-ignore
-          fastify.io.emit('USER_DISCONNECTED', user)
-        })
-
-        // Handle chat messages
-        socket.on('chat.message', (messageData: any) => {
-          fastify.log.info(
-            `💬 Chat message from ${messageData.user}: ${messageData.message}`
-          )
-          // @ts-ignore
-          fastify.io.emit('chat.message', messageData)
-        })
-
-        // Handle initiative messages
-        socket.on('init.message', (messageData: any) => {
-          fastify.log.info(
-            `🎲 Initiative from ${messageData.user}: ${messageData.initiative}`
-          )
-          // @ts-ignore
-          fastify.io.emit('init.message', messageData)
-        })
-
-        // Handle token updates
-        socket.on('token.message', (messageData: any) => {
-          fastify.log.info(`🎮 Token update received`)
-          // @ts-ignore
-          fastify.io.emit('token.message', messageData)
-        })
-
-        // Handle map changes
-        socket.on('map.message', (messageData: any) => {
-          fastify.log.info(`🗺️ Map change received`)
-          // @ts-ignore
-          fastify.io.emit('map.message', messageData)
-        })
-
-        // Handle line drawing
-        socket.on('line.message', (messageData: any) => {
-          fastify.log.info(`✏️ Line drawing received`)
-          // @ts-ignore
-          fastify.io.emit('line.message', messageData)
-        })
-
-        // Handle notes
-        socket.on('note.message', (messageData: any) => {
-          fastify.log.info(`📝 Note from ${messageData.user}`)
-          // @ts-ignore
-          fastify.io.emit('note.message', messageData)
-        })
-
-        socket.on('disconnect', () => {
-          fastify.log.info(`🔌 Socket.IO client disconnected: ${socket.id}`)
-        })
-      })
-
-      fastify.log.info('✅ Socket.IO handlers configured')
-    })
-
     fastify.log.info(`🚀 Server running on ${host}:${port}`)
     fastify.log.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`)
-    fastify.log.info(`🔌 Socket.IO ready for connections`)
+    fastify.log.info(
+      `🔌 WebSocket ready for connections on ws://${host}:${port}/ws`
+    )
     fastify.log.info('✅ Server startup completed successfully!')
   } catch (error) {
     fastify.log.error('❌ Server startup failed:', error)

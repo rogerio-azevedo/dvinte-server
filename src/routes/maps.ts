@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify'
-import models from '../models'
+import models from '../models/index'
 
 export default async function mapRoutes(fastify: FastifyInstance) {
   // Get map by ID

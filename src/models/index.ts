@@ -1,5 +1,5 @@
 import { Sequelize } from 'sequelize'
-import config from '../config/database'
+import databaseConfig from '../config/database'
 import { Models } from './associations'
 
 // Importações dos modelos
@@ -27,7 +27,7 @@ import { initBaseResist } from './BaseResist'
 import { setupAssociations } from './associations'
 
 // Inicializa a conexão com o banco de dados
-const sequelize = new Sequelize(config)
+const sequelize = new Sequelize(databaseConfig)
 
 // Inicializa os modelos
 const models: Models = {

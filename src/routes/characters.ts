@@ -4,7 +4,7 @@ import { QueryTypes } from 'sequelize'
 import models, { sequelize } from '../models'
 
 // Import utility functions
-import getCharXp from '../util/getCharXp.js'
+import { getCharXp } from '../utils/getCharXp'
 
 const characterSchema = z.object({
   name: z.string().min(1),

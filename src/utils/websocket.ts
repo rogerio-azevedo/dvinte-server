@@ -1,4 +1,4 @@
-// Utility functions for emitting Socket.IO events from controllers
+// Utility functions for emitting WebSocket events from controllers
 // These functions can be imported and used in any controller
 
 let fastifyInstance: any = null
@@ -8,46 +8,46 @@ export function initWebsocketUtils(fastify: any) {
   fastifyInstance = fastify
 }
 
-// Utility functions based on the old websocket.js
+// Utility functions for broadcasting WebSocket events
 export function saveMessage(message: any) {
-  if (fastifyInstance?.io) {
-    fastifyInstance.io.emit('chat.message', message)
+  if (fastifyInstance?.broadcast) {
+    fastifyInstance.broadcast('chat.message', message)
   }
 }
 
 export function saveNote(message: any) {
-  if (fastifyInstance?.io) {
-    fastifyInstance.io.emit('note.message', message)
+  if (fastifyInstance?.broadcast) {
+    fastifyInstance.broadcast('note.message', message)
   }
 }
 
 export function addInitiative(message: any) {
-  if (fastifyInstance?.io) {
-    fastifyInstance.io.emit('init.message', message)
+  if (fastifyInstance?.broadcast) {
+    fastifyInstance.broadcast('init.message', message)
   }
 }
 
 export function updateToken(message: any) {
-  if (fastifyInstance?.io) {
-    fastifyInstance.io.emit('token.message', message)
+  if (fastifyInstance?.broadcast) {
+    fastifyInstance.broadcast('token.message', message)
   }
 }
 
 export function changeMap(message: any) {
-  if (fastifyInstance?.io) {
-    fastifyInstance.io.emit('map.message', message)
+  if (fastifyInstance?.broadcast) {
+    fastifyInstance.broadcast('map.message', message)
   }
 }
 
 export function addLine(message: any) {
-  if (fastifyInstance?.io) {
-    fastifyInstance.io.emit('line.message', message)
+  if (fastifyInstance?.broadcast) {
+    fastifyInstance.broadcast('line.message', message)
   }
 }
 
 // Generic emit function
 export function emitEvent(event: string, data: any) {
-  if (fastifyInstance?.io) {
-    fastifyInstance.io.emit(event, data)
+  if (fastifyInstance?.broadcast) {
+    fastifyInstance.broadcast(event, data)
   }
 }

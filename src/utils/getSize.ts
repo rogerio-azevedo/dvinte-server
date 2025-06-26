@@ -1,4 +1,4 @@
-export default function getSize(size) {
+export const getSize = (size: number): string => {
   let text = ''
 
   switch (size) {

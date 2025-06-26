@@ -1,4 +1,4 @@
-export default function getGender(gender) {
+export const getGender = (gender: number): string => {
   let textGender = ''
 
   switch (gender) {

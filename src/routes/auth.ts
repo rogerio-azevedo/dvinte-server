@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { z } from 'zod'
-import models from '../models'
+import models from '../models/index'
 
 const sessionSchema = z.object({
   email: z.string().email(),

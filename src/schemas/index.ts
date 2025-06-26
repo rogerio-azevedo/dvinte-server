@@ -1,16 +1,17 @@
-import mongoose from 'mongoose'
-
-// Import schemas
-import '../app/schemas/Logs.js'
-import '../app/schemas/Initiative.js'
-import '../app/schemas/Notes.js'
-import '../app/schemas/Line.js'
+// Import schemas with TypeScript interfaces
+import LogsModel, { ILogs } from './Logs.js'
+import InitiativeModel, { IInitiative } from './Initiative.js'
+import NotesModel, { INotes } from './Notes.js'
+import LineModel, { ILine } from './Line.js'
 
 // Export models with proper typing
-export const Logs = mongoose.model('Logs')
-export const Initiative = mongoose.model('Initiative')
-export const Notes = mongoose.model('Notes')
-export const Line = mongoose.model('Line')
+export const Logs = LogsModel
+export const Initiative = InitiativeModel
+export const Notes = NotesModel
+export const Line = LineModel
+
+// Export types
+export type { ILogs, IInitiative, INotes, ILine }
 
 export default {
   Logs,

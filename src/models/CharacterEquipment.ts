@@ -1,27 +1,34 @@
-import { Sequelize, Model, DataTypes, ModelStatic } from 'sequelize'
+import {
+  Sequelize,
+  Model,
+  DataTypes,
+  ModelStatic,
+  InferAttributes,
+  InferCreationAttributes,
+  CreationOptional,
+  NonAttribute,
+  ForeignKey,
+} from 'sequelize'
+import type Character from './character'
+import type Equipment from './Equipment'
 
-interface CharacterEquipmentAttributes {
-  id: number
-  character_id: number
-  equipment_id: number
-  quantity: number
-  price: number
-  nickname: string | null
-  description: string | null
-  created_at: Date
-  updated_at: Date
-}
-
-class CharacterEquipment extends Model<CharacterEquipmentAttributes> {
-  declare id: number
-  declare character_id: number
-  declare equipment_id: number
+class CharacterEquipment extends Model<
+  InferAttributes<CharacterEquipment>,
+  InferCreationAttributes<CharacterEquipment>
+> {
+  declare id: CreationOptional<number>
+  declare character_id: ForeignKey<Character['id']>
+  declare equipment_id: ForeignKey<Equipment['id']>
   declare quantity: number
   declare price: number
   declare nickname: string | null
   declare description: string | null
-  declare readonly created_at: Date
-  declare readonly updated_at: Date
+  declare readonly created_at: CreationOptional<Date>
+  declare readonly updated_at: CreationOptional<Date>
+
+  // Associations
+  declare character?: NonAttribute<Character>
+  declare equipment?: NonAttribute<Equipment>
 
   static associate(models: any): void {
     this.belongsTo(models.Character, {

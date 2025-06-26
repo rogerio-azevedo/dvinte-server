@@ -1,11 +1,11 @@
 import { FastifyInstance } from 'fastify'
-import { CharacterToken, Token, Character } from '../models/index.js'
+import models from '../models'
 
 export default async function charTokenRoutes(fastify: FastifyInstance) {
   // Get all character tokens
   fastify.get('/chartokens', async (request, reply) => {
     try {
-      const characterTokens = await CharacterToken.findAll({
+      const characterTokens = await models.CharacterToken.findAll({
         attributes: [
           'id',
           'character_id',
@@ -19,12 +19,12 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         ],
         include: [
           {
-            model: Token,
+            model: models.Token,
             as: 'tokens',
             attributes: ['id', 'name', 'path', 'url'],
           },
           {
-            model: Character,
+            model: models.Character,
             as: 'character',
             attributes: ['id', 'name', 'level'],
           },
@@ -60,15 +60,15 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params as { id: string }
 
-      const characterToken = await CharacterToken.findByPk(id, {
+      const characterToken = await models.CharacterToken.findByPk(id, {
         include: [
           {
-            model: Token,
+            model: models.Token,
             as: 'tokens',
             attributes: ['id', 'name', 'path', 'url'],
           },
           {
-            model: Character,
+            model: models.Character,
             as: 'character',
             attributes: ['id', 'name', 'level'],
           },
@@ -137,7 +137,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         enabled,
       })
 
-      const characterToken = await CharacterToken.create({
+      const characterToken = await models.CharacterToken.create({
         character_id,
         token_id,
         x: parseFloat(x.toFixed(2)),
@@ -178,7 +178,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         enabled,
       })
 
-      const characterToken = await CharacterToken.findByPk(id)
+      const characterToken = await models.CharacterToken.findByPk(id)
 
       if (!characterToken) {
         return reply.code(404).send({ error: 'Character token not found' })
@@ -198,7 +198,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
       await characterToken.update(updateData)
 
       // Get updated list of all tokens
-      const allTokens = await CharacterToken.findAll({
+      const allTokens = await models.CharacterToken.findAll({
         attributes: [
           'id',
           'character_id',
@@ -211,12 +211,12 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         ],
         include: [
           {
-            model: Token,
+            model: models.Token,
             as: 'tokens',
             attributes: ['id', 'name', 'path', 'url'],
           },
           {
-            model: Character,
+            model: models.Character,
             as: 'character',
             attributes: ['id', 'name', 'level'],
           },
@@ -265,7 +265,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         enabled?: boolean
       }
 
-      const characterToken = await CharacterToken.findByPk(id)
+      const characterToken = await models.CharacterToken.findByPk(id)
 
       if (!characterToken) {
         return reply.code(404).send({ error: 'Character token not found' })
@@ -285,7 +285,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
       await characterToken.update(updateData)
 
       // Get updated list of all tokens
-      const allTokens = await CharacterToken.findAll({
+      const allTokens = await models.CharacterToken.findAll({
         attributes: [
           'id',
           'character_id',
@@ -298,12 +298,12 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         ],
         include: [
           {
-            model: Token,
+            model: models.Token,
             as: 'tokens',
             attributes: ['id', 'name', 'path', 'url'],
           },
           {
-            model: Character,
+            model: models.Character,
             as: 'character',
             attributes: ['id', 'name', 'level'],
           },

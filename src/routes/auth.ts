@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { z } from 'zod'
-import { User } from '../models/index.js'
+import models from '../models'
 
 const sessionSchema = z.object({
   email: z.string().email(),
@@ -25,7 +25,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       fastify.log.info(`Login attempt for email: ${email}`)
 
       // Find user by email
-      const user = await User.findOne({
+      const user = await models.User.findOne({
         where: { email },
         attributes: ['id', 'name', 'email', 'password_hash', 'is_gm'],
       })
@@ -85,7 +85,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       const { name, email, password, is_gm } = userSchema.parse(request.body)
 
       // Check if user already exists
-      const existingUser = await User.findOne({ where: { email } })
+      const existingUser = await models.User.findOne({ where: { email } })
 
       if (existingUser) {
         return reply.code(400).send({ error: 'User already exists' })
@@ -95,7 +95,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       const password_hash = await bcrypt.hash(password, 8)
 
       // Create user
-      const user = await User.create({
+      const user = await models.User.create({
         name,
         email,
         phone: '', // Campo obrigatório na migration mas pode ser vazio
@@ -133,7 +133,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
   fastify.get('/debug/user/:email', async (request, reply) => {
     try {
       const { email } = request.params as { email: string }
-      const user = await User.findOne({
+      const user = await models.User.findOne({
         where: { email },
         attributes: [
           'id',

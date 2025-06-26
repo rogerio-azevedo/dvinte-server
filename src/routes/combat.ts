@@ -1,49 +1,8 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { Logs, Initiative } from '../schemas/index.js'
-import { saveMessage } from '../utils/websocket.js'
-import { Character } from '../models/index.js'
-
-// Mock data for now - will be replaced with real models later
-const mockCombatData = {
-  id: 1,
-  Health: 100,
-  HealthNow: 85,
-  Fortitude: 5,
-  Reflex: 3,
-  Will: 4,
-  BaseAttack: 8,
-  StrMod: 2,
-  StrModTemp: null,
-  ConMod: 1,
-  ConModTemp: null,
-  DexMod: 3,
-  DexModTemp: null,
-  WisMod: 1,
-  WisModTemp: null,
-  Armor: [
-    {
-      type: 1, // armor
-      bonus: 4,
-      defense: 2,
-      dexterity: 3,
-    },
-    {
-      type: 2, // shield
-      bonus: 2,
-      defense: 1,
-      dexterity: null,
-    },
-  ],
-  Weapon: [
-    {
-      id: 1,
-      name: 'Espada Longa',
-      damage: '1d8',
-      hit: 8,
-    },
-  ],
-}
+import { Logs, Initiative } from '../schemas/index'
+import { saveMessage } from '../utils/websocket'
+import models from '../models'
 
 const mockCombatMessages = [
   {
@@ -64,7 +23,7 @@ export default async function combatRoutes(fastify: FastifyInstance) {
       fastify.log.info(`Searching for character with user_id: ${userId}`)
 
       // Primeiro, buscar apenas o personagem básico para testar
-      const char: any = await Character.findOne({
+      const char: any = await models.Character.findOne({
         where: {
           user_id: userId,
           is_ativo: true,

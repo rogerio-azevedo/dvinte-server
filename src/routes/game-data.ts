@@ -1,20 +1,12 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import {
-  Race,
-  Class,
-  Alignment,
-  Divinity,
-  Weapon,
-  Armor,
-  Equipment,
-} from '../models/index.js'
+import models from '../models'
 
 export default async function gameDataRoutes(fastify: FastifyInstance) {
   // Races
   fastify.get('/races', async (request, reply) => {
     try {
-      const races = await Race.findAll({
+      const races = await models.Race.findAll({
         order: [['name', 'ASC']],
       })
       return reply.send(races)
@@ -27,7 +19,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   fastify.get('/races/:id', async (request, reply) => {
     try {
       const { id } = request.params as { id: string }
-      const race = await Race.findByPk(parseInt(id))
+      const race = await models.Race.findByPk(parseInt(id))
 
       if (!race) {
         return reply.code(404).send({ error: 'Race not found' })
@@ -43,7 +35,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   // Classes
   fastify.get('/classes', async (request, reply) => {
     try {
-      const classes = await Class.findAll({
+      const classes = await models.Class.findAll({
         order: [['name', 'ASC']],
       })
       return reply.send(classes)
@@ -56,7 +48,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   fastify.get('/classes/:id', async (request, reply) => {
     try {
       const { id } = request.params as { id: string }
-      const characterClass = await Class.findByPk(parseInt(id))
+      const characterClass = await models.Class.findByPk(parseInt(id))
 
       if (!characterClass) {
         return reply.code(404).send({ error: 'Class not found' })
@@ -72,7 +64,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   // Alignments
   fastify.get('/alignments', async (request, reply) => {
     try {
-      const alignments = await Alignment.findAll({
+      const alignments = await models.Alignment.findAll({
         order: [['name', 'ASC']],
       })
       return reply.send(alignments)
@@ -85,7 +77,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   fastify.get('/alignments/:id', async (request, reply) => {
     try {
       const { id } = request.params as { id: string }
-      const alignment = await Alignment.findByPk(parseInt(id))
+      const alignment = await models.Alignment.findByPk(parseInt(id))
 
       if (!alignment) {
         return reply.code(404).send({ error: 'Alignment not found' })
@@ -101,7 +93,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   // Divinities
   fastify.get('/divinities', async (request, reply) => {
     try {
-      const divinities = await Divinity.findAll({
+      const divinities = await models.Divinity.findAll({
         order: [['name', 'ASC']],
       })
       return reply.send(divinities)
@@ -114,7 +106,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   fastify.get('/divinities/:id', async (request, reply) => {
     try {
       const { id } = request.params as { id: string }
-      const divinity = await Divinity.findByPk(parseInt(id))
+      const divinity = await models.Divinity.findByPk(parseInt(id))
 
       if (!divinity) {
         return reply.code(404).send({ error: 'Divinity not found' })
@@ -130,7 +122,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   // Weapons
   fastify.get('/weapons', async (request, reply) => {
     try {
-      const weapons = await Weapon.findAll({
+      const weapons = await models.Weapon.findAll({
         order: [['name', 'ASC']],
       })
       return reply.send(weapons)
@@ -143,7 +135,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   fastify.get('/weapons/:id', async (request, reply) => {
     try {
       const { id } = request.params as { id: string }
-      const weapon = await Weapon.findByPk(parseInt(id))
+      const weapon = await models.Weapon.findByPk(parseInt(id))
 
       if (!weapon) {
         return reply.code(404).send({ error: 'Weapon not found' })
@@ -159,7 +151,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   // Armors
   fastify.get('/armors', async (request, reply) => {
     try {
-      const armors = await Armor.findAll({
+      const armors = await models.Armor.findAll({
         order: [['name', 'ASC']],
       })
       return reply.send(armors)
@@ -172,7 +164,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   fastify.get('/armors/:id', async (request, reply) => {
     try {
       const { id } = request.params as { id: string }
-      const armor = await Armor.findByPk(parseInt(id))
+      const armor = await models.Armor.findByPk(parseInt(id))
 
       if (!armor) {
         return reply.code(404).send({ error: 'Armor not found' })
@@ -188,7 +180,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   // Equipments
   fastify.get('/equipments', async (request, reply) => {
     try {
-      const equipments = await Equipment.findAll({
+      const equipments = await models.Equipment.findAll({
         order: [['name', 'ASC']],
       })
       return reply.send(equipments)
@@ -201,7 +193,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   fastify.get('/equipments/:id', async (request, reply) => {
     try {
       const { id } = request.params as { id: string }
-      const equipment = await Equipment.findByPk(parseInt(id))
+      const equipment = await models.Equipment.findByPk(parseInt(id))
 
       if (!equipment) {
         return reply.code(404).send({ error: 'Equipment not found' })
@@ -218,7 +210,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   fastify.post('/races', async (request, reply) => {
     try {
       const { name } = request.body as { name: string }
-      const race = await Race.create({ name })
+      const race = await models.Race.create({ name })
       return reply.code(201).send(race)
     } catch (error) {
       fastify.log.error(error)
@@ -229,7 +221,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   fastify.post('/classes', async (request, reply) => {
     try {
       const classData = request.body as any
-      const characterClass = await Class.create(classData)
+      const characterClass = await models.Class.create(classData)
       return reply.code(201).send(characterClass)
     } catch (error) {
       fastify.log.error(error)
@@ -240,7 +232,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   fastify.post('/alignments', async (request, reply) => {
     try {
       const { name } = request.body as { name: string }
-      const alignment = await Alignment.create({ name })
+      const alignment = await models.Alignment.create({ name })
       return reply.code(201).send(alignment)
     } catch (error) {
       fastify.log.error(error)
@@ -251,7 +243,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   fastify.post('/divinities', async (request, reply) => {
     try {
       const { name } = request.body as { name: string }
-      const divinity = await Divinity.create({ name })
+      const divinity = await models.Divinity.create({ name })
       return reply.code(201).send(divinity)
     } catch (error) {
       fastify.log.error(error)
@@ -300,7 +292,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
         name: weaponData.name.toUpperCase(),
       }
 
-      const weapon = await Weapon.create(processedData)
+      const weapon = await models.Weapon.create(processedData)
       return reply.code(201).send(weapon)
     } catch (error) {
       fastify.log.error(error)
@@ -314,7 +306,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   fastify.post('/armors', async (request, reply) => {
     try {
       const armorData = request.body as any
-      const armor = await Armor.create(armorData)
+      const armor = await models.Armor.create(armorData)
       return reply.code(201).send(armor)
     } catch (error) {
       fastify.log.error(error)
@@ -325,7 +317,7 @@ export default async function gameDataRoutes(fastify: FastifyInstance) {
   fastify.post('/equipments', async (request, reply) => {
     try {
       const equipmentData = request.body as any
-      const equipment = await Equipment.create(equipmentData)
+      const equipment = await models.Equipment.create(equipmentData)
       return reply.code(201).send(equipment)
     } catch (error) {
       fastify.log.error(error)

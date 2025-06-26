@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify'
-import { GameMap } from '../models/index.js'
+import models from '../models'
 
 export default async function mapRoutes(fastify: FastifyInstance) {
   // Get map by ID
@@ -7,7 +7,7 @@ export default async function mapRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params as { id: string }
 
-      const map = await GameMap.findByPk(id)
+      const map = await models.GameMap.findByPk(id)
 
       if (!map) {
         return reply.code(404).send({ error: 'Map not found' })
@@ -23,7 +23,7 @@ export default async function mapRoutes(fastify: FastifyInstance) {
   // Get all maps
   fastify.get('/maps', async (request, reply) => {
     try {
-      const maps = await GameMap.findAll({
+      const maps = await models.GameMap.findAll({
         order: [['created_at', 'DESC']],
       })
 

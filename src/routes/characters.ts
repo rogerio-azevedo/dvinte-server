@@ -1,17 +1,7 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { QueryTypes } from 'sequelize'
-import {
-  Character,
-  Race,
-  Alignment,
-  Divinity,
-  User,
-  Portrait,
-  sequelize,
-  CharacterWeapon,
-  Weapon,
-} from '../models/index.js'
+import models, { sequelize } from '../models'
 
 // Import utility functions
 import getCharXp from '../util/getCharXp.js'
@@ -132,13 +122,13 @@ export default async function characterRoutes(fastify: FastifyInstance) {
   // Get all characters
   fastify.get('/characters', async (request, reply) => {
     try {
-      const characters = await Character.findAll({
+      const characters = await models.Character.findAll({
         include: [
-          { model: Race, as: 'race' },
-          { model: Alignment, as: 'alignment' },
-          { model: Divinity, as: 'divinity' },
-          { model: User, as: 'user', attributes: ['id', 'name'] },
-          { model: Portrait, as: 'portrait' },
+          { model: models.Race, as: 'race' },
+          { model: models.Alignment, as: 'alignment' },
+          { model: models.Divinity, as: 'divinity' },
+          { model: models.User, as: 'user', attributes: ['id', 'name'] },
+          { model: models.Portrait, as: 'portrait' },
         ],
         where: { is_ativo: true },
         order: [['created_at', 'DESC']],
@@ -169,13 +159,13 @@ export default async function characterRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params as { id: string }
 
-      const character = await Character.findByPk(parseInt(id), {
+      const character = await models.Character.findByPk(parseInt(id), {
         include: [
-          { model: Race, as: 'race' },
-          { model: Alignment, as: 'alignment' },
-          { model: Divinity, as: 'divinity' },
-          { model: User, as: 'user', attributes: ['id', 'name'] },
-          { model: Portrait, as: 'portrait' },
+          { model: models.Race, as: 'race' },
+          { model: models.Alignment, as: 'alignment' },
+          { model: models.Divinity, as: 'divinity' },
+          { model: models.User, as: 'user', attributes: ['id', 'name'] },
+          { model: models.Portrait, as: 'portrait' },
         ],
       })
 
@@ -227,7 +217,7 @@ export default async function characterRoutes(fastify: FastifyInstance) {
         'Character data to be created:',
         JSON.stringify(charData, null, 2)
       )
-      const character = await Character.create(charData)
+      const character = await models.Character.create(charData)
       fastify.log.info(`Character created with ID: ${character.id}`)
 
       // Create attributes if provided
@@ -291,13 +281,13 @@ export default async function characterRoutes(fastify: FastifyInstance) {
       }
 
       // Fetch the created character with all associations
-      const createdCharacter = await Character.findByPk(character.id, {
+      const createdCharacter = await models.Character.findByPk(character.id, {
         include: [
-          { model: Race, as: 'race' },
-          { model: Alignment, as: 'alignment' },
-          { model: Divinity, as: 'divinity' },
-          { model: User, as: 'user', attributes: ['id', 'name'] },
-          { model: Portrait, as: 'portrait' },
+          { model: models.Race, as: 'race' },
+          { model: models.Alignment, as: 'alignment' },
+          { model: models.Divinity, as: 'divinity' },
+          { model: models.User, as: 'user', attributes: ['id', 'name'] },
+          { model: models.Portrait, as: 'portrait' },
         ],
       })
 
@@ -318,7 +308,7 @@ export default async function characterRoutes(fastify: FastifyInstance) {
       const { id } = request.params as { id: string }
       const characterData = characterSchema.partial().parse(request.body)
 
-      const character = await Character.findByPk(parseInt(id))
+      const character = await models.Character.findByPk(parseInt(id))
 
       if (!character) {
         return reply.code(404).send({ error: 'Character not found' })
@@ -327,13 +317,13 @@ export default async function characterRoutes(fastify: FastifyInstance) {
       await character.update(characterData)
 
       // Fetch updated character with associations
-      const updatedCharacter = await Character.findByPk(character.id, {
+      const updatedCharacter = await models.Character.findByPk(character.id, {
         include: [
-          { model: Race, as: 'race' },
-          { model: Alignment, as: 'alignment' },
-          { model: Divinity, as: 'divinity' },
-          { model: User, as: 'user', attributes: ['id', 'name'] },
-          { model: Portrait, as: 'portrait' },
+          { model: models.Race, as: 'race' },
+          { model: models.Alignment, as: 'alignment' },
+          { model: models.Divinity, as: 'divinity' },
+          { model: models.User, as: 'user', attributes: ['id', 'name'] },
+          { model: models.Portrait, as: 'portrait' },
         ],
       })
 
@@ -349,7 +339,7 @@ export default async function characterRoutes(fastify: FastifyInstance) {
     try {
       const { id } = request.params as { id: string }
 
-      const character = await Character.findByPk(parseInt(id))
+      const character = await models.Character.findByPk(parseInt(id))
 
       if (!character) {
         return reply.code(404).send({ error: 'Character not found' })
@@ -378,19 +368,19 @@ export default async function characterRoutes(fastify: FastifyInstance) {
       fastify.log.info('Parsed weapon data:', weaponData)
 
       // Verify if character exists
-      const character = await Character.findByPk(characterId)
+      const character = await models.Character.findByPk(characterId)
       if (!character) {
         return reply.code(404).send({ error: 'Character not found' })
       }
 
       // Verify if weapon exists
-      const weapon = await Weapon.findByPk(weaponData.weapon)
+      const weapon = await models.Weapon.findByPk(weaponData.weapon)
       if (!weapon) {
         return reply.code(404).send({ error: 'Weapon not found' })
       }
 
       // Create character weapon association
-      const characterWeapon = await CharacterWeapon.create({
+      const characterWeapon = await models.CharacterWeapon.create({
         character_id: Number(characterId),
         weapon_id: weaponData.weapon,
         hit: weaponData.hit,
@@ -434,7 +424,7 @@ export default async function characterRoutes(fastify: FastifyInstance) {
           weaponId: string
         }
 
-        const result = await CharacterWeapon.destroy({
+        const result = await models.CharacterWeapon.destroy({
           where: {
             character_id: parseInt(characterId),
             weapon_id: parseInt(weaponId),

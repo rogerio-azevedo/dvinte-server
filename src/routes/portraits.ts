@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify'
-import { Portrait } from '../models/index.js'
+import models from '../models'
 import {
   uploadToR2,
   deleteFromR2,
@@ -13,7 +13,7 @@ export default async function portraitRoutes(fastify: FastifyInstance) {
   // Get all portraits
   fastify.get('/portraits', async (request, reply) => {
     try {
-      const portraits = await Portrait.findAll({
+      const portraits = await models.Portrait.findAll({
         order: [['created_at', 'DESC']],
       })
 
@@ -49,7 +49,7 @@ export default async function portraitRoutes(fastify: FastifyInstance) {
         return reply.code(400).send({ error: 'Invalid portrait ID' })
       }
 
-      const portrait = await Portrait.findByPk(id)
+      const portrait = await models.Portrait.findByPk(id)
 
       if (!portrait) {
         return reply.code(404).send({ error: 'Portrait not found' })
@@ -147,7 +147,7 @@ export default async function portraitRoutes(fastify: FastifyInstance) {
       console.log('🔍 Upload para R2 concluído:', r2Url)
 
       // Salvar no banco com a URL do R2
-      const portrait = await Portrait.create({
+      const portrait = await models.Portrait.create({
         name: fileName,
         path: r2Url, // Agora salva a URL completa do R2
       })
@@ -176,7 +176,7 @@ export default async function portraitRoutes(fastify: FastifyInstance) {
         return reply.code(400).send({ error: 'Invalid portrait ID' })
       }
 
-      const portrait = await Portrait.findByPk(id)
+      const portrait = await models.Portrait.findByPk(id)
 
       if (!portrait) {
         return reply.code(404).send({ error: 'Portrait not found' })
@@ -220,7 +220,7 @@ export default async function portraitRoutes(fastify: FastifyInstance) {
         return reply.code(400).send({ error: 'Invalid portrait ID' })
       }
 
-      const portrait = await Portrait.findByPk(id)
+      const portrait = await models.Portrait.findByPk(id)
 
       if (!portrait) {
         return reply.code(404).send({ error: 'Portrait not found' })

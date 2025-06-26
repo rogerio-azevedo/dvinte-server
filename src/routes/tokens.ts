@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify'
-import { Token } from '../models/index.js'
+import models from '../models'
 import {
   uploadToR2,
   deleteFromR2,
@@ -13,7 +13,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
   // Get all tokens
   fastify.get('/tokens', async (request, reply) => {
     try {
-      const tokens = await Token.findAll({
+      const tokens = await models.Token.findAll({
         order: [['created_at', 'DESC']],
       })
 
@@ -35,7 +35,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
   // Also handle with trailing slash (same handler)
   fastify.get('/tokens/', async (request, reply) => {
     try {
-      const tokens = await Token.findAll({
+      const tokens = await models.Token.findAll({
         order: [['created_at', 'DESC']],
       })
 
@@ -62,7 +62,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
         return reply.code(400).send({ error: 'Invalid token ID' })
       }
 
-      const token = await Token.findByPk(id)
+      const token = await models.Token.findByPk(id)
 
       if (!token) {
         return reply.code(404).send({ error: 'Token not found' })
@@ -160,7 +160,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
       console.log('🔍 Upload para R2 concluído:', r2Url)
 
       // Salvar no banco com a URL do R2
-      const token = await Token.create({
+      const token = await models.Token.create({
         name: fileName,
         path: r2Url, // Agora salva a URL completa do R2
       })
@@ -187,7 +187,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
         return reply.code(400).send({ error: 'Invalid token ID' })
       }
 
-      const token = await Token.findByPk(id)
+      const token = await models.Token.findByPk(id)
 
       if (!token) {
         return reply.code(404).send({ error: 'Token not found' })
@@ -231,7 +231,7 @@ export default async function tokenRoutes(fastify: FastifyInstance) {
         return reply.code(400).send({ error: 'Invalid token ID' })
       }
 
-      const token = await Token.findByPk(id)
+      const token = await models.Token.findByPk(id)
 
       if (!token) {
         return reply.code(404).send({ error: 'Token not found' })

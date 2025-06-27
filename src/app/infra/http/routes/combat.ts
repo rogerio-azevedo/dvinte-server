@@ -3,21 +3,12 @@ import { z } from 'zod'
 import { Logs, Initiative } from '../../db/schemas/index'
 import { saveMessage } from '../../../shared/utils/websocket'
 import models from '../../db/models'
+import { PipelineStage } from 'mongoose'
 
 import { getSize } from '../../../shared/utils/getSize'
 import { getGender } from '../../../shared/utils/getGender'
 import { getModifier } from '../../../shared/utils/getModifier'
-import { format, subDays, addDays } from 'date-fns'
-
-const mockCombatMessages = [
-  {
-    id: 1,
-    message: 'Combate iniciado!',
-    user: 'Sistema',
-    date: new Date().toISOString(),
-    isCrit: false,
-  },
-]
+import { format, subDays, addDays, parseISO } from 'date-fns'
 
 export default async function combatRoutes(fastify: FastifyInstance) {
   // Get character data for combat (alias for backward compatibility)
@@ -595,88 +586,35 @@ export default async function combatRoutes(fastify: FastifyInstance) {
       const data1 = format(date1, "yyyy-MM-dd'T00:00:00")
       const data2 = format(date2, "yyyy-MM-dd'T23:59:59")
 
-      // Get logs from MongoDB - ordered by createdAt ASC (oldest first, newest last/bottom)
       const logs = await Logs.find({
         createdAt: { $gte: data1, $lte: data2 },
-      })
-        .sort({ createdAt: 1 })
-        .limit(50)
-        .lean()
+      }).sort({ createdAt: 1 })
 
-      // Transform data to match frontend expectations
-      const messages = logs.map((log: any) => ({
-        id: log._id,
-        message: log.message,
+      const messages = logs.map(log => ({
+        id: log.id,
         user: log.user,
-        date: log.createdAt || new Date().toISOString(),
-        isCrit: log.isCrit === 'true' || log.isCrit === true,
-        result: log.result,
-        type: log.type,
+        date: log.createdAt,
+        message: log.message,
+        isCrit: log.isCrit,
       }))
 
       return reply.send(messages)
     } catch (error) {
       fastify.log.error('Error fetching combat logs:', error)
-      // Fallback to mock data if MongoDB fails
-      return reply.send(mockCombatMessages)
     }
   })
 
   // Post new combat message
   fastify.post('/combats', async (request, reply) => {
     try {
-      fastify.log.info(
-        '📝 Creating new chat message from:',
-        request.headers.origin || 'unknown'
-      )
+      console.log('request.body', request.body)
 
-      // Handle empty body
-      if (!request.body || Object.keys(request.body).length === 0) {
-        fastify.log.error('❌ Empty request body')
-        return reply.code(400).send({ error: 'Request body is empty' })
-      }
+      // Save to MongoDB - seguindo o padrão do legado
+      console.log('Tentando salvar no MongoDB...')
+      const savedLog = await Logs.create(request.body)
+      console.log('Salvo no MongoDB:', savedLog)
 
-      const messageSchema = z.object({
-        message: z.string().min(1),
-        user: z.string().min(1),
-        user_id: z.union([z.number(), z.string()]).optional(),
-        result: z.union([z.number(), z.string()]).optional(),
-        type: z.union([z.number(), z.string()]).optional(),
-        isCrit: z.union([z.boolean(), z.string()]).optional(),
-      })
-
-      const data = messageSchema.parse(request.body)
-
-      // Save to MongoDB
-      const logData = {
-        id: Date.now(),
-        user_id:
-          typeof data.user_id === 'string'
-            ? parseInt(data.user_id) || 1
-            : data.user_id || 1,
-        user: data.user,
-        message: data.message,
-        result:
-          typeof data.result === 'string'
-            ? parseInt(data.result) || 0
-            : data.result || 0,
-        type:
-          typeof data.type === 'string'
-            ? parseInt(data.type) || 1
-            : data.type || 1,
-        isCrit:
-          data.isCrit === true || data.isCrit === 'true' ? 'true' : 'false',
-      }
-
-      const newLog = new Logs(logData)
-      const savedLog = await newLog.save()
-
-      fastify.log.info('✅ Message saved:', {
-        user: savedLog.user,
-        message: savedLog.message,
-      })
-
-      // Return in frontend format
+      // Return in frontend format - seguindo o padrão do legado
       const response = {
         id: savedLog._id,
         message: savedLog.message,
@@ -687,25 +625,126 @@ export default async function combatRoutes(fastify: FastifyInstance) {
         type: savedLog.type,
       }
 
+      console.log('Response formatado:', response)
+
       // Broadcast new message via Socket.IO
-      saveMessage(response)
+      saveMessage({
+        event: 'chat.message',
+        data: response,
+      })
 
       return reply.code(201).send(response)
-    } catch (error) {
-      fastify.log.error('❌ Error creating combat message:', error)
-
-      // Check if it's a validation error
-      if (error instanceof z.ZodError) {
-        return reply.code(400).send({
-          error: 'Validation failed',
-          details: error.errors,
-        })
+    } catch (error: any) {
+      console.error('❌ Erro completo:', error)
+      if (error.stack) {
+        console.error('❌ Stack trace:', error.stack)
       }
 
       return reply.code(400).send({
         error: 'Failed to create combat message',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        details: error instanceof Error ? error.message : String(error),
       })
+    }
+  })
+
+  // Get damage stats
+  fastify.get('/damages', async (request, reply) => {
+    try {
+      // Busca a última mensagem de início de sessão
+      const sessionStart = await Logs.aggregate([
+        {
+          $match: { type: 0 },
+        },
+        {
+          $project: {
+            _id: 0,
+            createdAt: 1,
+          },
+        },
+        {
+          $sort: { createdAt: -1 },
+        },
+        {
+          $limit: 1,
+        },
+      ])
+
+      // Busca a última mensagem de início de combate
+      const combatStart = await Logs.aggregate([
+        {
+          $match: { type: { $in: [8, 10] } },
+        },
+        {
+          $project: {
+            _id: 0,
+            createdAt: 1,
+          },
+        },
+        {
+          $sort: { createdAt: -1 },
+        },
+        {
+          $limit: 1,
+        },
+      ])
+
+      const data2 = format(addDays(new Date(), 1), "yyyy-MM-dd'T23:59:59")
+      const { type } = request.query as { type?: string }
+
+      // Define o filtro de data baseado no tipo (combat ou session)
+      let match: PipelineStage.Match = {
+        $match: {
+          type: 4,
+          createdAt: {
+            $gte:
+              combatStart.length > 0 ? combatStart[0].createdAt : new Date(),
+            $lte: parseISO(data2),
+          },
+        },
+      }
+
+      if (type !== 'combat') {
+        match = {
+          $match: {
+            type: 4,
+            createdAt: {
+              $gte:
+                sessionStart.length > 0
+                  ? sessionStart[0].createdAt
+                  : new Date(),
+              $lte: parseISO(data2),
+            },
+          },
+        }
+      }
+
+      // Agrupa os danos por usuário
+      const group: PipelineStage.Group = {
+        $group: {
+          _id: { user: '$user' },
+          damage: {
+            $sum: '$result',
+          },
+        },
+      }
+
+      // Formata o resultado
+      const project: PipelineStage.Project = {
+        $project: {
+          _id: 0,
+          user: '$_id.user',
+          damage: '$damage',
+        },
+      }
+
+      // Executa a agregação
+      const pipeline: PipelineStage[] = [match, group, project]
+      const damages = await Logs.aggregate(pipeline)
+
+      return reply.send(damages)
+    } catch (error) {
+      fastify.log.error('Error fetching damage stats:', error)
+      return reply.code(500).send({ error: 'Failed to fetch damage stats' })
     }
   })
 }

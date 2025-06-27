@@ -11,7 +11,7 @@ export function initWebsocketUtils(fastify: any) {
 // Utility functions for broadcasting WebSocket events
 export function saveMessage(message: any) {
   if (fastifyInstance?.broadcast) {
-    fastifyInstance.broadcast('chat.message', message)
+    fastifyInstance.broadcast(message.event, message.data)
   }
 }
 

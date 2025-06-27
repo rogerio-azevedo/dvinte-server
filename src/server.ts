@@ -14,22 +14,7 @@ import './app/infra/db/models/index'
 import './app/infra/db/schemas/index'
 
 // Import routes
-import authRoutes from './app/infra/http/routes/auth'
-import characterRoutes from './app/infra/http/routes/characters'
-import combatRoutes from './app/infra/http/routes/combat'
-import mapRoutes from './app/infra/http/routes/maps'
-import charTokenRoutes from './app/infra/http/routes/chartokens'
-import initiativeRoutes from './app/infra/http/routes/initiatives'
-import tokenRoutes from './app/infra/http/routes/tokens'
-import portraitRoutes from './app/infra/http/routes/portraits'
-import monsterRoutes from './app/infra/http/routes/monsters'
-import uploadRoutes from './app/infra/http/routes/uploads'
-import armorRoutes from './app/infra/http/routes/armor'
-import weaponRoutes from './app/infra/http/routes/weapon'
-import equipmentRoutes from './app/infra/http/routes/equipment'
-import raceRoutes from './app/infra/http/routes/race'
-import alignmentRoutes from './app/infra/http/routes/alignment'
-import divinityRoutes from './app/infra/http/routes/divinity'
+import routes from './app/infra/http/routes'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -87,7 +72,7 @@ async function registerPlugins() {
           `🔌 WebSocket client connected. Total clients: ${wsClients.size}`
         )
 
-        connection.on('message', (message: Buffer) => {
+        connection.on('message', async (message: Buffer) => {
           try {
             const data = JSON.parse(message.toString())
             fastify.log.info('📨 WebSocket message received:', data)
@@ -215,23 +200,8 @@ async function start() {
     fastify.log.info('🏥 Registering health routes...')
     await registerHealthRoutes()
 
-    fastify.log.info('📋 Registering API routes FIRST...')
-    await fastify.register(authRoutes)
-    await fastify.register(characterRoutes)
-    await fastify.register(combatRoutes)
-    await fastify.register(mapRoutes)
-    await fastify.register(charTokenRoutes)
-    await fastify.register(initiativeRoutes)
-    await fastify.register(tokenRoutes)
-    await fastify.register(portraitRoutes)
-    await fastify.register(monsterRoutes)
-    await fastify.register(uploadRoutes)
-    await fastify.register(armorRoutes)
-    await fastify.register(weaponRoutes)
-    await fastify.register(equipmentRoutes)
-    await fastify.register(raceRoutes)
-    await fastify.register(alignmentRoutes)
-    await fastify.register(divinityRoutes)
+    fastify.log.info('📋 Registering API routes...')
+    await fastify.register(routes)
 
     fastify.log.info('🔗 Connecting to databases...')
     await connectDatabases()

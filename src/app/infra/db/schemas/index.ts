@@ -1,8 +1,8 @@
 // Import schemas with TypeScript interfaces
-import LogsModel, { ILogs } from './Logs'
-import InitiativeModel, { IInitiative } from './Initiative'
-import NotesModel, { INotes } from './Notes'
-import LineModel, { ILine } from './Line'
+import LogsModel, { ILogs } from './Logs.js'
+import InitiativeModel, { IInitiative } from './Initiative.js'
+import NotesModel, { INotes } from './Notes.js'
+import LineModel, { ILine } from './Line.js'
 
 // Export models with proper typing
 export const Logs = LogsModel

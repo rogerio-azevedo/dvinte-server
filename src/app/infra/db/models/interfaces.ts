@@ -190,3 +190,13 @@ export interface CharacterWeaponAttributes {
   created_at?: Date
   updated_at?: Date
 }
+
+export interface CampaignAttributes {
+  id: number
+  name: string
+  description: string | null
+  user_id: number
+  is_active: boolean
+  created_at: Date
+  updated_at: Date
+}

@@ -4,7 +4,7 @@ import { Models } from './associations'
 
 // Importações dos modelos
 import { initUser } from './User'
-import { initCharacter } from './character'
+import { initCharacter } from './Character'
 import { initRace } from './Race'
 import { initClass } from './Class'
 import { initAlignment } from './Alignment'
@@ -24,6 +24,7 @@ import { initAttribute } from './Attribute'
 import { initAttributeTemp } from './AttributeTemp'
 import { initBaseAttack } from './BaseAttack'
 import { initBaseResist } from './BaseResist'
+import { initCampaign } from './Campaign'
 import { setupAssociations } from './associations'
 
 // Inicializa a conexão com o banco de dados
@@ -52,6 +53,7 @@ const models: Models = {
   AttributeTemp: initAttributeTemp(sequelize),
   BaseAttack: initBaseAttack(sequelize),
   BaseResist: initBaseResist(sequelize),
+  Campaign: initCampaign(sequelize),
 }
 
 // Executa as associações

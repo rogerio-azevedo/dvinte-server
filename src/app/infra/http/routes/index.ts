@@ -16,6 +16,14 @@ import raceRoutes from './race'
 import alignmentRoutes from './alignment'
 import divinityRoutes from './divinity'
 import monsterRoutes from './monsters'
+import attributeRoutes from './attributes'
+import attributeTempRoutes from './attribute-temp'
+import baseAttackRoutes from './base-attack'
+import baseResistRoutes from './base-resist'
+import campaignRoutes from './campaigns'
+import notesRoutes from './notes'
+import characterWeaponRoutes from './characterweapons'
+import characterArmorRoutes from './characterarmors'
 
 export default async function routes(fastify: FastifyInstance) {
   await fastify.register(authRoutes)
@@ -34,4 +42,12 @@ export default async function routes(fastify: FastifyInstance) {
   await fastify.register(initiativeRoutes)
   await fastify.register(monsterRoutes)
   await fastify.register(uploadRoutes)
+  await fastify.register(attributeRoutes)
+  await fastify.register(attributeTempRoutes)
+  await fastify.register(baseAttackRoutes)
+  await fastify.register(baseResistRoutes)
+  await fastify.register(campaignRoutes)
+  await fastify.register(notesRoutes)
+  await fastify.register(characterWeaponRoutes)
+  await fastify.register(characterArmorRoutes)
 }

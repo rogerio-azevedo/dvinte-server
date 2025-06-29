@@ -2,30 +2,30 @@ import { Sequelize, Model, DataTypes, ModelStatic } from 'sequelize'
 
 interface GameMapAttributes {
   id: number
-  campaign_id: number | null
+  campaign_id: number
   battle: string
-  world: string | null
-  width: number | null
-  height: number | null
-  grid: boolean | null
-  fog: boolean | null
-  gm_layer: boolean | null
-  owner: number | null
+  world: string
+  width: number
+  height: number
+  grid: boolean
+  fog: boolean
+  gm_layer: boolean
+  owner: number
   created_at: Date
   updated_at: Date
 }
 
 class GameMap extends Model<GameMapAttributes> {
   declare id: number
-  declare campaign_id: number | null
+  declare campaign_id: number
   declare battle: string
-  declare world: string | null
-  declare width: number | null
-  declare height: number | null
-  declare grid: boolean | null
-  declare fog: boolean | null
-  declare gm_layer: boolean | null
-  declare owner: number | null
+  declare world: string
+  declare width: number
+  declare height: number
+  declare grid: boolean
+  declare fog: boolean
+  declare gm_layer: boolean
+  declare owner: number
   declare readonly created_at: Date
   declare readonly updated_at: Date
 }
@@ -38,18 +38,42 @@ const initGameMap = (sequelize: Sequelize): ModelStatic<GameMap> => {
         primaryKey: true,
         autoIncrement: true,
       },
-      campaign_id: DataTypes.INTEGER,
+      campaign_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
       battle: {
         type: DataTypes.STRING,
         allowNull: false,
       },
-      world: DataTypes.STRING,
-      width: DataTypes.INTEGER,
-      height: DataTypes.INTEGER,
-      grid: DataTypes.BOOLEAN,
-      fog: DataTypes.BOOLEAN,
-      gm_layer: DataTypes.BOOLEAN,
-      owner: DataTypes.INTEGER,
+      world: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      width: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      height: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      grid: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+      },
+      fog: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+      },
+      gm_layer: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+      },
+      owner: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
       created_at: DataTypes.DATE,
       updated_at: DataTypes.DATE,
     },

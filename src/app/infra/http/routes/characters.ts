@@ -804,4 +804,304 @@ export default async function characterRoutes(fastify: FastifyInstance) {
       }
     }
   )
+
+  // Get characters by user ID
+  fastify.get('/characters/user/:userId', async (request, reply) => {
+    try {
+      const { userId } = request.params as { userId: string }
+
+      const characters = await models.Character.findAll({
+        where: {
+          user_id: parseInt(userId),
+          is_ativo: true,
+        },
+        include: [
+          {
+            model: models.Portrait,
+            as: 'portrait',
+            attributes: ['id', 'path', 'url'],
+          },
+          { model: models.Divinity, as: 'divinity', attributes: ['name'] },
+          { model: models.Alignment, as: 'alignment', attributes: ['name'] },
+          { model: models.Race, as: 'race', attributes: ['name'] },
+          { model: models.Attribute, as: 'attribute' },
+          { model: models.AttributeTemp, as: 'attribute_temp' },
+          { model: models.User, as: 'user', attributes: ['name'] },
+          {
+            association: 'classes',
+            attributes: ['name', 'attack', 'fortitude', 'reflex', 'will'],
+            through: { attributes: ['level'] },
+          },
+          {
+            association: 'armors',
+            attributes: [
+              'id',
+              'name',
+              'type',
+              'bonus',
+              'dexterity',
+              'penalty',
+              'magic',
+              'displacement_s',
+              'displacement_m',
+              'weight',
+              'price',
+              'book',
+              'version',
+            ],
+            through: { attributes: ['defense', 'description', 'price'] },
+          },
+          {
+            association: 'weapons',
+            attributes: [
+              'id',
+              'name',
+              'dice_s',
+              'dice_m',
+              'multiplier_s',
+              'multiplier_m',
+              'critical',
+              'crit_from',
+              'range',
+              'type',
+              'material',
+              'weight',
+              'str_bonus',
+              'price',
+              'book',
+              'version',
+            ],
+            through: {
+              attributes: [
+                'hit',
+                'damage',
+                'element',
+                'crit_mod',
+                'crit_from_mod',
+                'dex_damage',
+                'price',
+                'nickname',
+                'description',
+              ],
+            },
+          },
+          {
+            association: 'equipments',
+            attributes: [
+              'id',
+              'name',
+              'str_temp',
+              'dex_temp',
+              'con_temp',
+              'int_temp',
+              'wis_temp',
+              'cha_temp',
+              'weight',
+              'price',
+              'book',
+              'version',
+            ],
+            through: { attributes: ['description'] },
+          },
+        ],
+        order: [['name', 'ASC']],
+      })
+
+      fastify.log.info('Characters found ZZZZZZZZZZZZZZZZZZZZ:', characters)
+
+      if (!characters.length) {
+        return reply
+          .code(404)
+          .send({ error: 'No characters found for this user' })
+      }
+
+      // Transformar os dados para o formato esperado pelo frontend
+      const formattedCharacters = await Promise.all(
+        characters.map(async character => {
+          // Buscar níveis para cálculos de ataque base e resistências
+          const levels = character.classes?.map(
+            (c: any) => c.CharacterClass.level
+          )
+
+          const baseAtack = await models.BaseAttack.findAll({
+            where: { level: levels },
+            raw: true,
+            attributes: ['level', 'low', 'medium', 'high'],
+          })
+
+          const baseResist = await models.BaseResist.findAll({
+            where: { level: levels },
+            raw: true,
+            attributes: ['level', 'low', 'high'],
+          })
+
+          return {
+            Cod: character.id,
+            Name: character.name?.toUpperCase() || '',
+            User: character.user?.name?.toUpperCase() || '',
+            Level: character.level || 0,
+            Race: character.race?.name?.toUpperCase() || '',
+            Health: character.health || 0,
+            HealthNow: character.health_now || 0,
+            Age: character.age || 0,
+            Gender: getGender(character.gender || 0),
+            Size: getSize(character.size || 0),
+
+            Height: character.height || '',
+            Weight: character.weight || '',
+            Eye: character.eye?.toUpperCase() || '',
+            Hair: character.hair?.toUpperCase() || '',
+            Skin: character.skin?.toUpperCase() || '',
+
+            Exp: character.exp || 0,
+            Alig: character.alignment?.name?.toUpperCase() || '',
+            Divin: character.divinity?.name?.toUpperCase() || '',
+
+            Str: character.attribute?.strength || 0,
+            Dex: character.attribute?.dexterity || 0,
+            Con: character.attribute?.constitution || 0,
+            Int: character.attribute?.intelligence || 0,
+            Wis: character.attribute?.wisdom || 0,
+            Cha: character.attribute?.charisma || 0,
+
+            StrMod: getModifier(character.attribute?.strength) || 0,
+            DexMod: getModifier(character.attribute?.dexterity) || 0,
+            ConMod: getModifier(character.attribute?.constitution) || 0,
+            IntMod: getModifier(character.attribute?.intelligence) || 0,
+            WisMod: getModifier(character.attribute?.wisdom) || 0,
+            ChaMod: getModifier(character.attribute?.charisma) || 0,
+
+            StrTemp: character.attribute_temp?.strength || 0,
+            DexTemp: character.attribute_temp?.dexterity || 0,
+            ConTemp: character.attribute_temp?.constitution || 0,
+            IntTemp: character.attribute_temp?.intelligence || 0,
+            WisTemp: character.attribute_temp?.wisdom || 0,
+            ChaTemp: character.attribute_temp?.charisma || 0,
+
+            StrModTemp: getModifier(character.attribute_temp?.strength) || 0,
+            DexModTemp: getModifier(character.attribute_temp?.dexterity) || 0,
+            ConModTemp:
+              getModifier(character.attribute_temp?.constitution) || 0,
+            IntModTemp:
+              getModifier(character.attribute_temp?.intelligence) || 0,
+            WisModTemp: getModifier(character.attribute_temp?.wisdom) || 0,
+            ChaModTemp: getModifier(character.attribute_temp?.charisma) || 0,
+
+            Portrait: character.portrait?.url || '',
+
+            BaseAttack:
+              character.classes?.reduce((total: number, c: any) => {
+                const base = baseAtack.find(
+                  a => a.level === c.CharacterClass.level
+                )
+                return total + ((base && base[c.attack]) || 0)
+              }, 0) || 0,
+
+            Fortitude:
+              character.classes?.reduce((total: number, c: any) => {
+                const base = baseResist.find(
+                  a => a.level === c.CharacterClass.level
+                )
+                return total + ((base && base[c.fortitude]) || 0)
+              }, 0) || 0,
+
+            Reflex:
+              character.classes?.reduce((total: number, c: any) => {
+                const base = baseResist.find(
+                  a => a.level === c.CharacterClass.level
+                )
+                return total + ((base && base[c.reflex]) || 0)
+              }, 0) || 0,
+
+            Will:
+              character.classes?.reduce((total: number, c: any) => {
+                const base = baseResist.find(
+                  a => a.level === c.CharacterClass.level
+                )
+                return total + ((base && base[c.will]) || 0)
+              }, 0) || 0,
+
+            Classes:
+              character.classes?.map((c: any) => ({
+                name: c.name?.toUpperCase() || '',
+                attack: c.attack || '',
+                fortitude: c.fortitude,
+                reflex: c.reflex,
+                will: c.will,
+                level: c.CharacterClass?.level || 0,
+              })) || [],
+
+            Armor:
+              character.armors?.map((c: any) => ({
+                id: c.id || 0,
+                name: c.name?.toUpperCase() || '',
+                type: c.type || 0,
+                bonus: c.bonus || 0,
+                dexterity: c.dexterity || 0,
+                penalty: c.penalty || 0,
+                magic: c.magic || 0,
+                displacement_s: c.displacement_s || 0,
+                displacement_m: c.displacement_m || 0,
+                weight: c.weight || 0,
+                price: c.CharacterArmor?.price || 0,
+                book: c.book || '',
+                version: c.version || '',
+                defense: c.CharacterArmor?.defense || 0,
+                description: c.CharacterArmor?.description || '',
+              })) || [],
+
+            Weapon:
+              character.weapons?.map((c: any) => ({
+                id: c.id || 0,
+                name: c.name?.toUpperCase() || '',
+                dice_s: c.dice_s || 0,
+                dice_m: c.dice_m || 0,
+                multiplier_s: c.multiplier_s || 0,
+                multiplier_m: c.multiplier_m || 0,
+                critical: c.critical || 0,
+                crit_from: c.crit_from || 0,
+                range: c.range || 0,
+                type: c.type || '',
+                weight: c.weight || 0,
+                material: c.material || '',
+                str_bonus: c.str_bonus || 0,
+                price: c.CharacterWeapon?.price || 0,
+                book: c.book || '',
+                version: c.version || '',
+                hit: c.CharacterWeapon?.hit || 0,
+                damage: c.CharacterWeapon?.damage || 0,
+                element: c.CharacterWeapon?.element || 0,
+                crit_mod: c.CharacterWeapon?.crit_mod || 0,
+                crit_from_mod: c.CharacterWeapon?.crit_from_mod || 0,
+                dex_damage: c.CharacterWeapon?.dex_damage || false,
+                nickname: c.CharacterWeapon?.nickname || '',
+                description: c.CharacterWeapon?.description || '',
+              })) || [],
+
+            Equipment:
+              character.equipments?.map((c: any) => ({
+                id: c.id || 0,
+                name: c.name?.toUpperCase() || '',
+                str_temp: c.str_temp || 0,
+                dex_temp: c.dex_temp || 0,
+                con_temp: c.con_temp || 0,
+                int_temp: c.int_temp || 0,
+                wis_temp: c.wis_temp || 0,
+                cha_temp: c.cha_temp || 0,
+                weight: c.weight || 0,
+                price: c.price || 0,
+                book: c.book || '',
+                version: c.version || '',
+                description: c.CharacterEquipment?.description || '',
+              })) || [],
+          }
+        })
+      )
+
+      return reply.send(formattedCharacters)
+    } catch (error) {
+      fastify.log.error(error)
+      return reply.code(500).send({ error: 'Failed to fetch user characters' })
+    }
+  })
 }

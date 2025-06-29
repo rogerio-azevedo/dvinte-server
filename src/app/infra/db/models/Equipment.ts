@@ -7,7 +7,7 @@ import {
   CreationOptional,
   NonAttribute,
 } from 'sequelize'
-import type Character from './character'
+import type Character from './Character'
 
 export default class Equipment extends Model<
   InferAttributes<Equipment>,

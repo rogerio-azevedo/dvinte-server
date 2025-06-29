@@ -38,6 +38,7 @@ export interface Models {
   AttributeTemp: ModelStatic<any>
   BaseAttack: ModelStatic<any>
   BaseResist: ModelStatic<any>
+  Campaign: ModelStatic<any>
 }
 
 // Função para configurar as associações
@@ -173,4 +174,35 @@ export function setupAssociations(models: Models) {
     foreignKey: 'character_id',
     as: 'characterToken',
   })
+
+  // Campaign associations
+  models.Campaign.belongsTo(models.User, {
+    foreignKey: 'user_id',
+    as: 'user',
+  })
+
+  models.User.hasMany(models.Campaign, {
+    foreignKey: 'user_id',
+    as: 'campaigns',
+  })
+
+  // GameMap associations
+  models.Campaign.hasOne(models.GameMap, {
+    foreignKey: 'campaign_id',
+    as: 'gameMap',
+  })
+
+  models.GameMap.belongsTo(models.Campaign, {
+    foreignKey: 'campaign_id',
+    as: 'campaign',
+  })
+}
+
+export default function initAssociations() {
+  // ... existing code ...
+  // Removendo a inicialização do Note
+  // ... existing code ...
+  // ... existing code ...
+  // Removendo a associação do Note
+  // ... existing code ...
 }

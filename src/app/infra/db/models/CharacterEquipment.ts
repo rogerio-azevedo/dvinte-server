@@ -9,7 +9,7 @@ import {
   NonAttribute,
   ForeignKey,
 } from 'sequelize'
-import type Character from './character'
+import type Character from './Character'
 import type Equipment from './Equipment'
 
 class CharacterEquipment extends Model<

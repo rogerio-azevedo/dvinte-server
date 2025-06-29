@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken'
 import { FastifyRequest, FastifyReply } from 'fastify'
-import authConfig from '../../config/auth'
+import authConfig from '../../../shared/config/auth'
 
 interface DecodedToken {
   id: number

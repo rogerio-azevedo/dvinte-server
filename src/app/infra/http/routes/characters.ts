@@ -533,8 +533,6 @@ export default async function characterRoutes(fastify: FastifyInstance) {
           })) || [],
       }
 
-      console.log('🚀 ~ charData KKKKKKKKK:', charData)
-
       return reply.send(charData)
     } catch (error) {
       fastify.log.error(error)

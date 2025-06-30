@@ -19,9 +19,6 @@ class CharacterEquipment extends Model<
   declare id: CreationOptional<number>
   declare character_id: ForeignKey<Character['id']>
   declare equipment_id: ForeignKey<Equipment['id']>
-  declare quantity: number
-  declare price: number
-  declare nickname: string | null
   declare description: string | null
   declare readonly created_at: CreationOptional<Date>
   declare readonly updated_at: CreationOptional<Date>
@@ -43,7 +40,7 @@ class CharacterEquipment extends Model<
   }
 }
 
-const initCharacterEquipment = (
+export const initCharacterEquipment = (
   sequelize: Sequelize
 ): ModelStatic<CharacterEquipment> => {
   CharacterEquipment.init(
@@ -61,18 +58,10 @@ const initCharacterEquipment = (
         type: DataTypes.INTEGER,
         allowNull: false,
       },
-      quantity: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 1,
+      description: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
       },
-      price: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 0,
-      },
-      nickname: DataTypes.STRING,
-      description: DataTypes.TEXT,
       created_at: DataTypes.DATE,
       updated_at: DataTypes.DATE,
     },
@@ -87,4 +76,4 @@ const initCharacterEquipment = (
   return CharacterEquipment
 }
 
-export { CharacterEquipment as default, initCharacterEquipment }
+export default CharacterEquipment

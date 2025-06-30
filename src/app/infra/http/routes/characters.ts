@@ -86,6 +86,7 @@ interface CharacterEquipment {
   book: string
   version: string
   CharacterEquipment?: {
+    id: number
     description: string
   }
 }
@@ -343,7 +344,7 @@ export default async function characterRoutes(fastify: FastifyInstance) {
               'book',
               'version',
             ],
-            through: { attributes: ['description'] },
+            through: { attributes: ['id', 'description'] },
           },
         ],
       })
@@ -371,7 +372,7 @@ export default async function characterRoutes(fastify: FastifyInstance) {
 
       // Transformar dados para o formato esperado pelo frontend
       const charData = {
-        Cod: character.id,
+        Cod: character.id || 0,
         Name: character.name?.toUpperCase() || '',
         User: character.user?.name?.toUpperCase() || '',
         Level: character.level || 0,
@@ -406,6 +407,7 @@ export default async function characterRoutes(fastify: FastifyInstance) {
         WisMod: getModifier(character.attribute?.wisdom) || 0,
         ChaMod: getModifier(character.attribute?.charisma) || 0,
 
+        // Calcular atributos temporários somando os bônus dos equipamentos
         StrTemp: character.attribute_temp?.strength || 0,
         DexTemp: character.attribute_temp?.dexterity || 0,
         ConTemp: character.attribute_temp?.constitution || 0,
@@ -524,8 +526,14 @@ export default async function characterRoutes(fastify: FastifyInstance) {
             book: c.book || '',
             version: c.version || '',
             description: c.CharacterEquipment?.description || '',
+            CharacterEquipment: {
+              id: c.CharacterEquipment?.id || 0,
+              description: c.CharacterEquipment?.description || '',
+            },
           })) || [],
       }
+
+      console.log('🚀 ~ charData KKKKKKKKK:', charData)
 
       return reply.send(charData)
     } catch (error) {
@@ -901,7 +909,7 @@ export default async function characterRoutes(fastify: FastifyInstance) {
               'book',
               'version',
             ],
-            through: { attributes: ['description'] },
+            through: { attributes: ['id', 'description'] },
           },
         ],
         order: [['name', 'ASC']],
@@ -971,6 +979,7 @@ export default async function characterRoutes(fastify: FastifyInstance) {
             WisMod: getModifier(character.attribute?.wisdom) || 0,
             ChaMod: getModifier(character.attribute?.charisma) || 0,
 
+            // Calcular atributos temporários somando os bônus dos equipamentos
             StrTemp: character.attribute_temp?.strength || 0,
             DexTemp: character.attribute_temp?.dexterity || 0,
             ConTemp: character.attribute_temp?.constitution || 0,
@@ -1093,6 +1102,10 @@ export default async function characterRoutes(fastify: FastifyInstance) {
                 book: c.book || '',
                 version: c.version || '',
                 description: c.CharacterEquipment?.description || '',
+                CharacterEquipment: {
+                  id: c.CharacterEquipment?.id || 0,
+                  description: c.CharacterEquipment?.description || '',
+                },
               })) || [],
           }
         })

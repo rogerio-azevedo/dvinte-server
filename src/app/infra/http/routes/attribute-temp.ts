@@ -15,6 +15,10 @@ const attributeTempSchema = z.object({
 const attributeTempUpdateSchema = z.object({
   str: z.union([z.number(), z.string()]).transform(val => Number(val)),
   con: z.union([z.number(), z.string()]).transform(val => Number(val)),
+  dex: z.union([z.number(), z.string()]).transform(val => Number(val)),
+  int: z.union([z.number(), z.string()]).transform(val => Number(val)),
+  wis: z.union([z.number(), z.string()]).transform(val => Number(val)),
+  cha: z.union([z.number(), z.string()]).transform(val => Number(val)),
 })
 
 export default async function attributeTempRoutes(fastify: FastifyInstance) {
@@ -114,11 +118,11 @@ export default async function attributeTempRoutes(fastify: FastifyInstance) {
       const updatedData = {
         character_id: attributeTemp.character_id,
         strength: attributeTemp.strength + updateData.str,
-        dexterity: attributeTemp.dexterity,
+        dexterity: attributeTemp.dexterity + updateData.dex,
         constitution: attributeTemp.constitution + updateData.con,
-        intelligence: attributeTemp.intelligence,
-        wisdom: attributeTemp.wisdom,
-        charisma: attributeTemp.charisma,
+        intelligence: attributeTemp.intelligence + updateData.int,
+        wisdom: attributeTemp.wisdom + updateData.wis,
+        charisma: attributeTemp.charisma + updateData.cha,
       }
 
       await attributeTemp.update(updatedData)

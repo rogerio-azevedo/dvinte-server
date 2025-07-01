@@ -25,6 +25,7 @@ import notesRoutes from './notes'
 import characterWeaponRoutes from './characterweapons'
 import characterArmorRoutes from './characterarmors'
 import characterEquipmentRoutes from './characterequipments'
+import classRoutes from './classes'
 
 export default async function routes(fastify: FastifyInstance) {
   await fastify.register(authRoutes)
@@ -52,4 +53,5 @@ export default async function routes(fastify: FastifyInstance) {
   await fastify.register(characterWeaponRoutes)
   await fastify.register(characterArmorRoutes)
   await fastify.register(characterEquipmentRoutes)
+  await fastify.register(classRoutes)
 }

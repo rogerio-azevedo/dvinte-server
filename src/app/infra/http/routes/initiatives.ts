@@ -41,8 +41,8 @@ export default async function initiativeRoutes(fastify: FastifyInstance) {
 
       // Usar a função saveMessage para broadcast
       saveMessage({
-        ...message,
-        type: 'init.message',
+        event: 'init.message',
+        data: message,
       })
 
       fastify.log.info(`Initiative created for user ${user}: ${initiative}`)
@@ -60,8 +60,10 @@ export default async function initiativeRoutes(fastify: FastifyInstance) {
 
       // Usar a função saveMessage para broadcast
       saveMessage({
-        type: 'init.clear',
-        message: 'Initiatives cleared',
+        event: 'init.clear',
+        data: {
+          message: 'Initiatives cleared',
+        },
       })
 
       fastify.log.info(`Cleared ${result.deletedCount} initiatives`)
@@ -88,8 +90,8 @@ export default async function initiativeRoutes(fastify: FastifyInstance) {
 
       // Usar a função saveMessage para broadcast
       saveMessage({
-        type: 'init.delete',
-        id,
+        event: 'init.delete',
+        data: { id },
       })
 
       fastify.log.info(`Initiative deleted: ${id}`)

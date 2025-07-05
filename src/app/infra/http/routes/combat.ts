@@ -10,6 +10,20 @@ import { getGender } from '../../../shared/utils/getGender'
 import { getModifier } from '../../../shared/utils/getModifier'
 import { format, subDays, addDays, parseISO } from 'date-fns'
 
+const combatSchema = z.object({
+  id: z.number().optional(),
+  user_id: z.number(),
+  user: z.string(),
+  message: z.string(),
+  result: z.number(),
+  type: z.number(),
+  isCrit: z.string().optional(),
+})
+
+const healthNowSchema = z.object({
+  newHealth: z.number(),
+})
+
 export default async function combatRoutes(fastify: FastifyInstance) {
   // Get character data for combat (alias for backward compatibility)
   fastify.get('/combats/characters/:userId', async (request, reply) => {
@@ -644,6 +658,50 @@ export default async function combatRoutes(fastify: FastifyInstance) {
         error: 'Failed to create combat message',
         details: error instanceof Error ? error.message : String(error),
       })
+    }
+  })
+
+  // PUT /healthnow
+  fastify.put('/healthnow', async (request, reply) => {
+    try {
+      const { newHealth } = healthNowSchema.parse(request.body)
+      const { id } = request.query as { id: string }
+      if (!id)
+        return reply.code(400).send({ error: 'ID do personagem é obrigatório' })
+      // Atualiza no banco
+      await models.Character.update(
+        { health_now: newHealth },
+        { where: { id: Number(id) } }
+      )
+      fastify.log.info(`Vida do personagem ${id} atualizada para ${newHealth}`)
+      return reply.code(200).send({ success: true })
+    } catch (error) {
+      fastify.log.error(error)
+      return reply
+        .code(400)
+        .send({ error: 'Erro ao atualizar vida do personagem' })
+    }
+  })
+
+  // PUT /monsterhealthnow
+  fastify.put('/monsterhealthnow', async (request, reply) => {
+    try {
+      const { newHealth } = healthNowSchema.parse(request.body)
+      const { id } = request.query as { id: string }
+      if (!id)
+        return reply.code(400).send({ error: 'ID do monstro é obrigatório' })
+      // Atualiza no banco
+      await models.Monster.update(
+        { health_now: newHealth },
+        { where: { id: Number(id) } }
+      )
+      fastify.log.info(`Vida do monstro ${id} atualizada para ${newHealth}`)
+      return reply.code(200).send({ success: true })
+    } catch (error) {
+      fastify.log.error(error)
+      return reply
+        .code(400)
+        .send({ error: 'Erro ao atualizar vida do monstro' })
     }
   })
 

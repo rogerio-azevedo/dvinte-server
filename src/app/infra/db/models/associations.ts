@@ -39,6 +39,7 @@ export interface Models {
   BaseAttack: ModelStatic<any>
   BaseResist: ModelStatic<any>
   Campaign: ModelStatic<any>
+  Monster: ModelStatic<any>
 }
 
 // Função para configurar as associações

@@ -2,14 +2,14 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
 import authMiddleware from '../middlewares/auth'
 import { saveMessage } from '../../../shared/utils/websocket'
-import models from '../../db/models'
 
 // Schema de validação para o request de dado
 const diceRollSchema = z.object({
-  diceType: z.enum(['d4', 'd6', 'd8', 'd10', 'd12', 'd20']),
+  diceType: z.enum(['d4', 'd6', 'd8', 'd10', 'd12', 'd20', 'd100']),
   diceMult: z.number().min(1).max(10), // Máximo 10 dados por vez
-  diceSides: z.number().min(4).max(20),
-  characterId: z.number().optional(), // Para auditoria
+  diceSides: z.number().min(4).max(100),
+  userId: z.number().optional(), // Para auditoria
+  userName: z.string().optional(), // Para auditoria
 })
 
 // Interface do request
@@ -18,7 +18,8 @@ interface DiceRollRequest extends FastifyRequest {
     diceType: string
     diceMult: number
     diceSides: number
-    characterId?: number
+    userId?: number
+    userName?: string
   }
   userId?: number
 }
@@ -67,6 +68,8 @@ async function generateTrueRandomNumbers(
       }),
     })
 
+    console.log('🚀 ~ response: HAUAHUAHUAHAUAH', response)
+
     if (!response.ok) {
       console.error(
         '❌ Erro na resposta da Random.org:',
@@ -102,23 +105,8 @@ export default async function diceRoutes(fastify: FastifyInstance) {
     async (request: DiceRollRequest, reply: FastifyReply) => {
       try {
         // Validar dados de entrada
-        const { diceType, diceMult, diceSides, characterId } =
+        const { diceType, diceMult, diceSides, userId, userName } =
           diceRollSchema.parse(request.body)
-
-        // Obter informações do usuário autenticado
-        const userId = request.userId
-        if (!userId) {
-          return reply.code(401).send({ error: 'Usuário não autenticado' })
-        }
-
-        // Buscar dados do usuário (para nome)
-        const user = await models.User.findByPk(userId)
-
-        if (!user) {
-          return reply.code(404).send({ error: 'Usuário não encontrado' })
-        }
-
-        const userName = user.name
 
         fastify.log.info(
           `🎲 ${userName} (ID: ${userId}) está rolando ${diceMult}${diceType}`
@@ -130,6 +118,7 @@ export default async function diceRoutes(fastify: FastifyInstance) {
           diceSides,
           diceMult
         )
+        console.log('🚀 ~ HUAHAUAHUAHAUHAUHA:', diceResults)
 
         // Dados para resposta e broadcast
         const diceData = {
@@ -140,34 +129,14 @@ export default async function diceRoutes(fastify: FastifyInstance) {
           diceMult,
           diceResult: diceResults,
           timestamp: new Date().toISOString(),
-          characterId,
         }
 
         // Log para auditoria
         fastify.log.info(
-          `🎲 Resultado: ${userName} rolou ${diceMult}${diceType}: [${diceResults.join(
+          `🎲 Resultado: rolou ${diceMult}${diceType}: [${diceResults.join(
             ', '
           )}]`
         )
-
-        // Salvar no log de combate (opcional - para histórico)
-        try {
-          const resultSum = diceResults.reduce((sum, val) => sum + val, 0)
-          const logMessage = `ROLOU ${diceMult}${diceType}: [${diceResults.join(
-            ', '
-          )}] = ${resultSum}`
-
-          // Aqui você pode salvar no MongoDB se quiser histórico
-          // await Logs.create({
-          //   user_id: userId,
-          //   user: userName,
-          //   message: logMessage,
-          //   result: resultSum,
-          //   type: 9, // Novo tipo para dados
-          // })
-        } catch (logError) {
-          fastify.log.warn('Falha ao salvar log do dado:', logError)
-        }
 
         // Broadcast via WebSocket para todos os jogadores conectados
         saveMessage({
@@ -178,9 +147,12 @@ export default async function diceRoutes(fastify: FastifyInstance) {
         fastify.log.info('📡 Evento dice.roll enviado via WebSocket')
 
         // Retornar resultado para o cliente
+        const { diceResult, ...restDiceData } = diceData
         return reply.code(200).send({
-          success: true,
-          data: diceData,
+          data: {
+            diceResult: diceResults,
+            ...restDiceData,
+          },
         })
       } catch (error) {
         fastify.log.error('Erro ao rolar dados:', error)
@@ -196,51 +168,6 @@ export default async function diceRoutes(fastify: FastifyInstance) {
           error: 'Erro interno do servidor',
           details: error instanceof Error ? error.message : String(error),
         })
-      }
-    }
-  )
-
-  // Rota para obter histórico de dados (opcional)
-  fastify.get(
-    '/dice/history',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const userId = request.userId
-        if (!userId) {
-          return reply.code(401).send({ error: 'Usuário não autenticado' })
-        }
-
-        // Aqui você pode implementar busca no histórico se salvar os dados
-        // Por enquanto, retorna array vazio
-        return reply.send([])
-      } catch (error) {
-        fastify.log.error('Erro ao buscar histórico de dados:', error)
-        return reply.code(500).send({ error: 'Erro ao buscar histórico' })
-      }
-    }
-  )
-
-  // Rota para validar permissões de dado (opcional)
-  fastify.get(
-    '/dice/permissions',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const userId = request.userId
-        if (!userId) {
-          return reply.code(401).send({ error: 'Usuário não autenticado' })
-        }
-
-        // Aqui você pode implementar lógica de permissões
-        // Ex: apenas GMs podem rolar certos tipos de dados, rate limiting, etc.
-        return reply.send({
-          canRoll: true,
-          maxDicePerRoll: 10,
-          allowedDiceTypes: ['d4', 'd6', 'd8', 'd10', 'd12', 'd20'],
-          cooldownSeconds: 0, // Sem cooldown por enquanto
-        })
-      } catch (error) {
-        fastify.log.error('Erro ao verificar permissões:', error)
-        return reply.code(500).send({ error: 'Erro ao verificar permissões' })
       }
     }
   )

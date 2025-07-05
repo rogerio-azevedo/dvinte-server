@@ -26,6 +26,8 @@ import { initBaseAttack } from './BaseAttack'
 import { initBaseResist } from './BaseResist'
 import { initCampaign } from './Campaign'
 import { initMonster } from './Monster'
+import { initMonsterAttribute } from './MonsterAttribute'
+import { initMonsterAttack } from './MonsterAttack'
 import { setupAssociations } from './associations'
 
 // Inicializa a conexão com o banco de dados
@@ -56,6 +58,8 @@ const models: Models = {
   BaseResist: initBaseResist(sequelize),
   Campaign: initCampaign(sequelize),
   Monster: initMonster(sequelize),
+  MonsterAttribute: initMonsterAttribute(sequelize),
+  MonsterAttack: initMonsterAttack(sequelize),
 }
 
 // Executa as associações

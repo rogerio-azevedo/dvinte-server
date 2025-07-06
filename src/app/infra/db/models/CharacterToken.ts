@@ -16,6 +16,17 @@ class CharacterToken
   declare enabled: boolean
   declare readonly created_at: Date
   declare readonly updated_at: Date
+
+  static associate(models: any): void {
+    this.belongsTo(models.Token, {
+      foreignKey: 'token_id',
+      as: 'tokens',
+    })
+    this.belongsTo(models.Character, {
+      foreignKey: 'character_id',
+      as: 'character',
+    })
+  }
 }
 
 export function initCharacterToken(sequelize: Sequelize) {

@@ -28,6 +28,7 @@ import { initCampaign } from './Campaign'
 import { initMonster } from './Monster'
 import { initMonsterAttribute } from './MonsterAttribute'
 import { initMonsterAttack } from './MonsterAttack'
+import { initAsset } from './Asset'
 import { setupAssociations } from './associations'
 
 // Inicializa a conexão com o banco de dados
@@ -60,6 +61,7 @@ const models: Models = {
   Monster: initMonster(sequelize),
   MonsterAttribute: initMonsterAttribute(sequelize),
   MonsterAttack: initMonsterAttack(sequelize),
+  Asset: initAsset(sequelize),
 }
 
 // Executa as associações

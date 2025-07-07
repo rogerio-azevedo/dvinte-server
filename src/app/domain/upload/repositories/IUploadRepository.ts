@@ -8,6 +8,7 @@ export interface UploadResult {
   size?: number
   originalName?: string
   error?: string
+  assetId?: number
 }
 
 export interface PresignedUrlResult {

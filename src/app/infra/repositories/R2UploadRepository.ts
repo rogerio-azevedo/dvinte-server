@@ -16,6 +16,7 @@ import {
   PresignedUrlResult,
   DeleteResult,
 } from '../../domain/upload/repositories/IUploadRepository.js'
+import { AssetRepository } from './AssetRepository'
 
 export class R2UploadRepository implements IUploadRepository {
   async uploadFile(
@@ -81,6 +82,11 @@ export class R2UploadRepository implements IUploadRepository {
       }
 
       await deleteFromR2(folderType, fileName)
+
+      if (folderType === 'GENERAL') {
+        const assetRepo = new AssetRepository()
+        await assetRepo.deleteByUrl(url)
+      }
 
       return {
         success: true,

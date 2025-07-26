@@ -137,6 +137,21 @@ export default async function monsterRoutes(fastify: FastifyInstance) {
             as: 'alignment',
             attributes: ['name'],
           },
+          {
+            model: models.MonsterAttack,
+            as: 'monster_attacks',
+            attributes: [
+              'id',
+              'name',
+              'dice',
+              'multiplier',
+              'critical',
+              'crit_from',
+              'range',
+              'hit',
+              'damage',
+            ],
+          },
         ],
         order: [['name', 'ASC']],
       })
@@ -158,6 +173,7 @@ export default async function monsterRoutes(fastify: FastifyInstance) {
         size: getSize(monster.size),
         alignment: monster.alignment?.name || 'Neutro',
         is_ativo: monster.is_ativo,
+        monster_attack: monster.monster_attacks || [],
       }))
 
       return reply.send(formattedMonsters)

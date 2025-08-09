@@ -111,7 +111,6 @@ async function convertStringToId(
       return subtypeMap[value] || 0 // Default: Outros
 
     case 'alignment':
-      // Buscar o alinhamento real do banco de dados
       try {
         const alignment = await models.Alignment.findOne({
           where: { name: value },

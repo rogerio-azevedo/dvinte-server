@@ -20,7 +20,6 @@
   "keywords": [],
   "author": "",
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
     "@swc/core": "^1.12.7",
     "@types/bcryptjs": "^3.0.0",
     "@types/multer": "^1.4.13",

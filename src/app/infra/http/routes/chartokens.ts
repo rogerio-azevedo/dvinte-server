@@ -27,7 +27,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
           {
             model: models.Character,
             as: 'character',
-            attributes: ['id', 'name', 'level'],
+            attributes: ['id', 'name', 'level', 'health', 'health_now'],
           },
         ],
       })
@@ -71,7 +71,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
           {
             model: models.Character,
             as: 'character',
-            attributes: ['id', 'name', 'level'],
+            attributes: ['id', 'name', 'level', 'health', 'health_now'],
           },
         ],
       })
@@ -219,7 +219,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
           {
             model: models.Character,
             as: 'character',
-            attributes: ['id', 'name', 'level'],
+            attributes: ['id', 'name', 'level', 'health', 'health_now'],
           },
         ],
       })
@@ -304,7 +304,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
           {
             model: models.Character,
             as: 'character',
-            attributes: ['id', 'name', 'level'],
+            attributes: ['id', 'name', 'level', 'health', 'health_now'],
           },
         ],
       })
@@ -334,6 +334,29 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
     } catch (error) {
       fastify.log.error(error)
       return reply.code(400).send({ error: 'Failed to update character token' })
+    }
+  })
+
+  // Delete character token
+  fastify.delete('/chartokens/:id', async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string }
+
+      const characterToken = await models.CharacterToken.findByPk(id)
+
+      if (!characterToken) {
+        return reply.code(404).send({ error: 'Character token not found' })
+      }
+
+      await characterToken.destroy()
+
+      fastify.log.info(`Character token deleted: ${id}`)
+      return reply
+        .code(200)
+        .send({ message: 'Character token deleted successfully' })
+    } catch (error) {
+      fastify.log.error(error)
+      return reply.code(500).send({ error: 'Failed to delete character token' })
     }
   })
 }

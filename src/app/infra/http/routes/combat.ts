@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { Logs } from '../../db/schemas/index'
-import { saveMessage } from '../../../shared/utils/websocket'
+import { saveMessage, emitEvent } from '../../../shared/utils/websocket'
 import models from '../../db/models'
 
 import { getSize } from '../../../shared/utils/getSize'
@@ -667,12 +667,45 @@ export default async function combatRoutes(fastify: FastifyInstance) {
       const { id } = request.query as { id: string }
       if (!id)
         return reply.code(400).send({ error: 'ID do personagem é obrigatório' })
+
+      // Buscar o personagem atual para fazer o cálculo correto
+      const character = await models.Character.findByPk(Number(id))
+      if (!character) {
+        return reply.code(404).send({ error: 'Personagem não encontrado' })
+      }
+
+      // Calcular nova vida (soma/subtração do valor atual)
+      const currentHealth = character.health_now || 0
+      const maxHealth = character.health || 0
+      let finalHealth = currentHealth + newHealth
+
+      // Garantir que não passe da vida máxima nem fique negativo
+      if (finalHealth > maxHealth) {
+        finalHealth = maxHealth
+      } else if (finalHealth < 0) {
+        finalHealth = 0
+      }
+
       // Atualiza no banco
       await models.Character.update(
-        { health_now: newHealth },
+        { health_now: finalHealth },
         { where: { id: Number(id) } }
       )
-      fastify.log.info(`Vida do personagem ${id} atualizada para ${newHealth}`)
+
+      // Emite evento WebSocket para atualizar em tempo real
+      emitEvent('character.health.updated', {
+        characterId: Number(id),
+        health: maxHealth,
+        health_now: finalHealth,
+        change: newHealth,
+        name: character.name,
+      })
+
+      fastify.log.info(
+        `Vida do personagem ${id} atualizada de ${currentHealth} para ${finalHealth} (${
+          newHealth > 0 ? '+' : ''
+        }${newHealth})`
+      )
       return reply.code(200).send({ success: true })
     } catch (error) {
       fastify.log.error(error)
@@ -689,12 +722,45 @@ export default async function combatRoutes(fastify: FastifyInstance) {
       const { id } = request.query as { id: string }
       if (!id)
         return reply.code(400).send({ error: 'ID do monstro é obrigatório' })
+
+      // Buscar o monstro atual para fazer o cálculo correto
+      const monster = await models.Monster.findByPk(Number(id))
+      if (!monster) {
+        return reply.code(404).send({ error: 'Monstro não encontrado' })
+      }
+
+      // Calcular nova vida (soma/subtração do valor atual)
+      const currentHealth = monster.health_now || 0
+      const maxHealth = monster.health || 0
+      let finalHealth = currentHealth + newHealth
+
+      // Garantir que não passe da vida máxima nem fique negativo
+      if (finalHealth > maxHealth) {
+        finalHealth = maxHealth
+      } else if (finalHealth < 0) {
+        finalHealth = 0
+      }
+
       // Atualiza no banco
       await models.Monster.update(
-        { health_now: newHealth },
+        { health_now: finalHealth },
         { where: { id: Number(id) } }
       )
-      fastify.log.info(`Vida do monstro ${id} atualizada para ${newHealth}`)
+
+      // Emite evento WebSocket para atualizar em tempo real
+      emitEvent('monster.health.updated', {
+        monsterId: Number(id),
+        health: maxHealth,
+        health_now: finalHealth,
+        change: newHealth,
+        name: monster.name,
+      })
+
+      fastify.log.info(
+        `Vida do monstro ${id} atualizada de ${currentHealth} para ${finalHealth} (${
+          newHealth > 0 ? '+' : ''
+        }${newHealth})`
+      )
       return reply.code(200).send({ success: true })
     } catch (error) {
       fastify.log.error(error)

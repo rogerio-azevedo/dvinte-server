@@ -27,7 +27,14 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
           {
             model: models.Character,
             as: 'character',
-            attributes: ['id', 'name', 'level', 'health', 'health_now'],
+            attributes: [
+              'id',
+              'name',
+              'level',
+              'health',
+              'health_now',
+              'user_id',
+            ],
           },
         ],
       })
@@ -71,7 +78,14 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
           {
             model: models.Character,
             as: 'character',
-            attributes: ['id', 'name', 'level', 'health', 'health_now'],
+            attributes: [
+              'id',
+              'name',
+              'level',
+              'health',
+              'health_now',
+              'user_id',
+            ],
           },
         ],
       })
@@ -219,7 +233,14 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
           {
             model: models.Character,
             as: 'character',
-            attributes: ['id', 'name', 'level', 'health', 'health_now'],
+            attributes: [
+              'id',
+              'name',
+              'level',
+              'health',
+              'health_now',
+              'user_id',
+            ],
           },
         ],
       })
@@ -304,7 +325,14 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
           {
             model: models.Character,
             as: 'character',
-            attributes: ['id', 'name', 'level', 'health', 'health_now'],
+            attributes: [
+              'id',
+              'name',
+              'level',
+              'health',
+              'health_now',
+              'user_id',
+            ],
           },
         ],
       })

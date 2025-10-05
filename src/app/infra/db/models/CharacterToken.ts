@@ -14,6 +14,7 @@ class CharacterToken
   declare height: number
   declare rotation: number
   declare enabled: boolean
+  declare label: string | null
   declare readonly created_at: Date
   declare readonly updated_at: Date
 
@@ -45,6 +46,10 @@ export function initCharacterToken(sequelize: Sequelize) {
       height: DataTypes.FLOAT,
       rotation: DataTypes.FLOAT,
       enabled: DataTypes.BOOLEAN,
+      label: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+      },
     },
     {
       sequelize,

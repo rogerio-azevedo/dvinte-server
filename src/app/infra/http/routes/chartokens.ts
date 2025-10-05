@@ -17,6 +17,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
           'height',
           'rotation',
           'enabled',
+          'label',
         ],
         include: [
           {
@@ -49,6 +50,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         height: t.height,
         rotation: t.rotation,
         enabled: t.enabled,
+        label: t.label,
         image: t.tokens?.url,
         tokens: t.tokens,
         character: t.character,
@@ -104,6 +106,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         height: characterToken.height,
         rotation: characterToken.rotation,
         enabled: characterToken.enabled,
+        label: characterToken.label,
         image: characterToken.tokens?.url,
         tokens: characterToken.tokens,
         character: characterToken.character,
@@ -130,6 +133,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         height = 90,
         rotation = 90,
         enabled = false,
+        label,
       } = request.body as {
         character_id: number
         token_id: number
@@ -139,6 +143,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         height?: number
         rotation?: number
         enabled?: boolean
+        label?: string
       }
 
       fastify.log.info('Creating new character token:', {
@@ -150,6 +155,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         height,
         rotation,
         enabled,
+        label,
       })
 
       const characterToken = await models.CharacterToken.create({
@@ -161,6 +167,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         height: parseFloat(height.toFixed(2)),
         rotation: parseFloat(rotation.toFixed(2)),
         enabled,
+        label: label || null,
       })
 
       fastify.log.info(`Character token created with ID: ${characterToken.id}`)
@@ -174,15 +181,17 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
   // Update character token position (without ID in URL - for drag and drop)
   fastify.put('/chartokens', async (request, reply) => {
     try {
-      const { id, x, y, width, height, rotation, enabled } = request.body as {
-        id: number
-        x?: number
-        y?: number
-        width?: number
-        height?: number
-        rotation?: number
-        enabled?: boolean
-      }
+      const { id, x, y, width, height, rotation, enabled, label } =
+        request.body as {
+          id: number
+          x?: number
+          y?: number
+          width?: number
+          height?: number
+          rotation?: number
+          enabled?: boolean
+          label?: string | null
+        }
 
       fastify.log.info(`Updating token ${id}:`, {
         x,
@@ -191,6 +200,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         height,
         rotation,
         enabled,
+        label,
       })
 
       const characterToken = await models.CharacterToken.findByPk(id)
@@ -209,6 +219,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
       if (rotation !== undefined)
         updateData.rotation = parseFloat(rotation.toFixed(2))
       if (enabled !== undefined) updateData.enabled = enabled
+      if (label !== undefined) updateData.label = label
 
       await characterToken.update(updateData)
 
@@ -223,6 +234,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
           'height',
           'rotation',
           'enabled',
+          'label',
         ],
         include: [
           {
@@ -255,6 +267,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         height: t.height,
         rotation: t.rotation,
         enabled: t.enabled,
+        label: t.label,
         image: t.tokens?.url,
         tokens: t.tokens,
         character: t.character,
@@ -276,14 +289,16 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
   fastify.put('/chartokens/:id', async (request, reply) => {
     try {
       const { id } = request.params as { id: string }
-      const { x, y, width, height, rotation, enabled } = request.body as {
-        x?: number
-        y?: number
-        width?: number
-        height?: number
-        rotation?: number
-        enabled?: boolean
-      }
+      const { x, y, width, height, rotation, enabled, label } =
+        request.body as {
+          x?: number
+          y?: number
+          width?: number
+          height?: number
+          rotation?: number
+          enabled?: boolean
+          label?: string | null
+        }
 
       const characterToken = await models.CharacterToken.findByPk(id)
 
@@ -301,6 +316,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
       if (rotation !== undefined)
         updateData.rotation = parseFloat(rotation.toFixed(2))
       if (enabled !== undefined) updateData.enabled = enabled
+      if (label !== undefined) updateData.label = label
 
       await characterToken.update(updateData)
 
@@ -315,6 +331,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
           'height',
           'rotation',
           'enabled',
+          'label',
         ],
         include: [
           {
@@ -347,6 +364,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         height: t.height,
         rotation: t.rotation,
         enabled: t.enabled,
+        label: t.label,
         image: t.tokens?.url,
         tokens: t.tokens,
         character: t.character,

@@ -170,6 +170,7 @@ export interface CharacterTokenAttributes {
   height?: number
   rotation?: number
   enabled?: boolean
+  label?: string | null
   created_at?: Date
   updated_at?: Date
 }

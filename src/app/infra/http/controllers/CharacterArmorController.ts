@@ -15,9 +15,26 @@ class CharacterArmorController {
     reply: FastifyReply
   ) {
     try {
+      const characterId = request.body.character
+      const armorId = Number(request.body.armor)
+
+      // ✅ VALIDAÇÃO: Verificar se a armadura já está vinculada ao personagem
+      const existingLink = await models.CharacterArmor.findOne({
+        where: {
+          character_id: characterId,
+          armor_id: armorId,
+        },
+      })
+
+      if (existingLink) {
+        return reply.status(400).send({
+          error: 'Esta armadura já está vinculada a este personagem',
+        })
+      }
+
       const armorChar = {
-        character_id: request.body.character,
-        armor_id: Number(request.body.armor),
+        character_id: characterId,
+        armor_id: armorId,
         defense: Number(request.body.defense),
         price: Number(request.body.price),
         description: request.body.description,

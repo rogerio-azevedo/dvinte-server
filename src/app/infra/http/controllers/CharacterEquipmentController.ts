@@ -26,7 +26,6 @@ class CharacterEquipmentController {
       const characterId = Number(request.params.id)
       const { equipment: equipmentId, description } = request.body
 
-      // Buscar o equipamento
       const equipment = await models.Equipment.findOne({
         where: {
           id: equipmentId,
@@ -37,67 +36,85 @@ class CharacterEquipmentController {
         return reply.status(404).send({ error: 'Equipment not found' })
       }
 
-      // Criar o vínculo do equipamento com o personagem
+      const existingLink = await models.CharacterEquipment.findOne({
+        where: {
+          character_id: characterId,
+          equipment_id: equipmentId,
+        },
+      })
+
+      if (existingLink) {
+        return reply.status(400).send({
+          error: 'Este equipamento já está vinculado a este personagem',
+        })
+      }
+
       const characterEquipment = await models.CharacterEquipment.create({
         character_id: characterId,
         equipment_id: equipmentId,
         description: description || null,
       })
 
-      // Buscar os atributos temporários do personagem
+      const baseAttrs = await models.Attribute.findOne({
+        where: {
+          character_id: characterId,
+        },
+      })
+
+      if (!baseAttrs) {
+        return reply
+          .status(404)
+          .send({ error: 'Character attributes not found' })
+      }
+
+      const allCharacterEquipments = await models.CharacterEquipment.findAll({
+        where: {
+          character_id: characterId,
+        },
+      })
+
+      let totalStrBonus = 0
+      let totalDexBonus = 0
+      let totalConBonus = 0
+      let totalIntBonus = 0
+      let totalWisBonus = 0
+      let totalChaBonus = 0
+
+      for (const charEquip of allCharacterEquipments) {
+        const equip = await models.Equipment.findByPk(charEquip.equipment_id)
+        if (equip) {
+          totalStrBonus += equip.str_temp || 0
+          totalDexBonus += equip.dex_temp || 0
+          totalConBonus += equip.con_temp || 0
+          totalIntBonus += equip.int_temp || 0
+          totalWisBonus += equip.wis_temp || 0
+          totalChaBonus += equip.cha_temp || 0
+        }
+      }
+
+      const newValues = {
+        strength: baseAttrs.strength + totalStrBonus,
+        dexterity: baseAttrs.dexterity + totalDexBonus,
+        constitution: baseAttrs.constitution + totalConBonus,
+        intelligence: baseAttrs.intelligence + totalIntBonus,
+        wisdom: baseAttrs.wisdom + totalWisBonus,
+        charisma: baseAttrs.charisma + totalChaBonus,
+      }
+
       let tempAttrs = await models.AttributeTemp.findOne({
         where: {
           character_id: characterId,
         },
       })
 
-      // Se não existirem atributos temporários, buscar os atributos base e criar os temporários
-      if (!tempAttrs) {
-        const baseAttrs = await models.Attribute.findOne({
-          where: {
-            character_id: characterId,
-          },
-        })
-
-        if (!baseAttrs) {
-          return reply
-            .status(404)
-            .send({ error: 'Character attributes not found' })
-        }
-
-        // Criar atributos temporários baseados nos atributos base
+      if (tempAttrs) {
+        await tempAttrs.update(newValues)
+      } else {
         tempAttrs = await models.AttributeTemp.create({
           character_id: characterId,
-          strength: baseAttrs.strength + (equipment.str_temp || 0),
-          dexterity: baseAttrs.dexterity + (equipment.dex_temp || 0),
-          constitution: baseAttrs.constitution + (equipment.con_temp || 0),
-          intelligence: baseAttrs.intelligence + (equipment.int_temp || 0),
-          wisdom: baseAttrs.wisdom + (equipment.wis_temp || 0),
-          charisma: baseAttrs.charisma + (equipment.cha_temp || 0),
+          ...newValues,
         })
-
-        console.log('Atributos temporários criados:', {
-          strength: tempAttrs.strength,
-          constitution: tempAttrs.constitution,
-        })
-      } else {
-        // Se já existirem atributos temporários, atualiza eles adicionando os bônus do equipamento
-        const newValues = {
-          strength: tempAttrs.strength + (equipment.str_temp || 0),
-          dexterity: tempAttrs.dexterity + (equipment.dex_temp || 0),
-          constitution: tempAttrs.constitution + (equipment.con_temp || 0),
-          intelligence: tempAttrs.intelligence + (equipment.int_temp || 0),
-          wisdom: tempAttrs.wisdom + (equipment.wis_temp || 0),
-          charisma: tempAttrs.charisma + (equipment.cha_temp || 0),
-        }
-
-        await tempAttrs.update(newValues)
-        await tempAttrs.reload()
-
-        console.log('Atributos temporários atualizados:', {
-          strength: tempAttrs.strength,
-          constitution: tempAttrs.constitution,
-        })
+        console.log('Atributos temporários criados:', newValues)
       }
 
       return reply.status(201).send(characterEquipment)
@@ -112,7 +129,6 @@ class CharacterEquipmentController {
       const characterEquipmentId = Number(request.params.id)
       const characterId = Number(request.query.char)
 
-      // Buscar o vínculo character_equipment
       const characterEquipment = await models.CharacterEquipment.findByPk(
         characterEquipmentId
       )
@@ -123,20 +139,51 @@ class CharacterEquipmentController {
           .send({ error: 'Character equipment not found' })
       }
 
-      // Verificar se o vínculo pertence ao personagem correto
       if (characterEquipment.character_id !== characterId) {
         return reply
           .status(403)
           .send({ error: 'This equipment does not belong to this character' })
       }
 
-      // Buscar o equipamento
-      const equipment = await models.Equipment.findByPk(
-        characterEquipment.equipment_id
-      )
+      // Remove o vínculo do equipamento PRIMEIRO
+      await characterEquipment.destroy()
 
-      if (!equipment) {
-        return reply.status(404).send({ error: 'Equipment not found' })
+      const baseAttrs = await models.Attribute.findOne({
+        where: {
+          character_id: characterId,
+        },
+      })
+
+      if (!baseAttrs) {
+        return reply
+          .status(404)
+          .send({ error: 'Character attributes not found' })
+      }
+
+      const remainingCharacterEquipments =
+        await models.CharacterEquipment.findAll({
+          where: {
+            character_id: characterId,
+          },
+        })
+
+      let totalStrBonus = 0
+      let totalDexBonus = 0
+      let totalConBonus = 0
+      let totalIntBonus = 0
+      let totalWisBonus = 0
+      let totalChaBonus = 0
+
+      for (const charEquip of remainingCharacterEquipments) {
+        const equip = await models.Equipment.findByPk(charEquip.equipment_id)
+        if (equip) {
+          totalStrBonus += equip.str_temp || 0
+          totalDexBonus += equip.dex_temp || 0
+          totalConBonus += equip.con_temp || 0
+          totalIntBonus += equip.int_temp || 0
+          totalWisBonus += equip.wis_temp || 0
+          totalChaBonus += equip.cha_temp || 0
+        }
       }
 
       // Buscar os atributos temporários do personagem
@@ -146,33 +193,26 @@ class CharacterEquipmentController {
         },
       })
 
-      // Se existirem atributos temporários, atualiza eles removendo os bônus do equipamento
+      const newValues = {
+        strength: baseAttrs.strength + totalStrBonus,
+        dexterity: baseAttrs.dexterity + totalDexBonus,
+        constitution: baseAttrs.constitution + totalConBonus,
+        intelligence: baseAttrs.intelligence + totalIntBonus,
+        wisdom: baseAttrs.wisdom + totalWisBonus,
+        charisma: baseAttrs.charisma + totalChaBonus,
+      }
+
       if (tempAttrs) {
-        const newValues = {
-          strength: tempAttrs.strength - (equipment.str_temp || 0),
-          dexterity: tempAttrs.dexterity - (equipment.dex_temp || 0),
-          constitution: tempAttrs.constitution - (equipment.con_temp || 0),
-          intelligence: tempAttrs.intelligence - (equipment.int_temp || 0),
-          wisdom: tempAttrs.wisdom - (equipment.wis_temp || 0),
-          charisma: tempAttrs.charisma - (equipment.cha_temp || 0),
-        }
-
-        // Primeiro atualiza os atributos temporários
         await tempAttrs.update(newValues)
-
-        // Depois remove o vínculo do equipamento
-        await characterEquipment.destroy()
-
-        // Recarrega os atributos temporários para garantir que foram atualizados
-        await tempAttrs.reload()
-
-        console.log('Atributos temporários após remoção:', {
-          strength: tempAttrs.strength,
-          constitution: tempAttrs.constitution,
+      } else if (remainingCharacterEquipments.length > 0) {
+        await models.AttributeTemp.create({
+          character_id: characterId,
+          ...newValues,
         })
-      } else {
-        // Se não existirem atributos temporários, apenas remove o vínculo
-        await characterEquipment.destroy()
+      } else if (remainingCharacterEquipments.length === 0) {
+        if (tempAttrs) {
+          await tempAttrs.destroy()
+        }
       }
 
       return reply.status(204).send()

@@ -359,7 +359,6 @@ export default async function characterRoutes(fastify: FastifyInstance) {
         return reply.code(404).send({ error: 'Character not found' })
       }
 
-      // Buscar níveis para cálculos de ataque base e resistências
       const levels = character.classes?.map(
         (c: CharacterClass) => c.CharacterClass.level
       )
@@ -376,7 +375,6 @@ export default async function characterRoutes(fastify: FastifyInstance) {
         attributes: ['level', 'low', 'high'],
       })
 
-      // Transformar dados para o formato esperado pelo frontend
       const charData = {
         Cod: character.id || 0,
         Name: character.name?.toUpperCase() || '',

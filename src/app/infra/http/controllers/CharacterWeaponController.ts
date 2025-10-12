@@ -21,9 +21,25 @@ class CharacterWeaponController {
     reply: FastifyReply
   ) {
     try {
+      const characterId = request.body.character
+      const weaponId = Number(request.body.weapon)
+
+      const existingLink = await models.CharacterWeapon.findOne({
+        where: {
+          character_id: characterId,
+          weapon_id: weaponId,
+        },
+      })
+
+      if (existingLink) {
+        return reply.status(400).send({
+          error: 'Esta arma já está vinculada a este personagem',
+        })
+      }
+
       const weaponChar = {
-        character_id: request.body.character,
-        weapon_id: Number(request.body.weapon),
+        character_id: characterId,
+        weapon_id: weaponId,
         hit: Number(request.body.hit),
         damage: Number(request.body.damage),
         element: Number(request.body.element),

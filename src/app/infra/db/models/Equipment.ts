@@ -22,6 +22,12 @@ export default class Equipment extends Model<
   declare int_temp: number
   declare wis_temp: number
   declare cha_temp: number
+  declare attack_bonus: number
+  declare damage_bonus: number
+  declare armor_class_bonus: number
+  declare fortitude_bonus: number
+  declare reflex_bonus: number
+  declare will_bonus: number
   declare price: number
   declare weight: number
   declare book: string | null
@@ -75,6 +81,30 @@ export function initEquipment(sequelize: Sequelize) {
         defaultValue: 0,
       },
       cha_temp: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      attack_bonus: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      damage_bonus: {
+        type: DataTypes.STRING(50),
+        allowNull: true,
+      },
+      armor_class_bonus: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      fortitude_bonus: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      reflex_bonus: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      will_bonus: {
         type: DataTypes.INTEGER,
         defaultValue: 0,
       },

@@ -94,6 +94,50 @@ export default async function armorRoutes(fastify: FastifyInstance) {
     }
   })
 
+  // Update armor
+  fastify.put('/armors/:id', async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string }
+      const armorData = request.body as any
+
+      const armor = await models.Armor.findByPk(parseInt(id))
+
+      if (!armor) {
+        return reply.code(404).send({ error: 'Armor not found' })
+      }
+
+      await armor.update({
+        ...armorData,
+        name: armorData.name.toUpperCase(),
+      })
+
+      return reply.send(armor)
+    } catch (error) {
+      fastify.log.error(error)
+      return reply.code(400).send({ error: 'Failed to update armor' })
+    }
+  })
+
+  // Delete armor
+  fastify.delete('/armors/:id', async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string }
+
+      const armor = await models.Armor.findByPk(parseInt(id))
+
+      if (!armor) {
+        return reply.code(404).send({ error: 'Armor not found' })
+      }
+
+      await armor.destroy()
+
+      return reply.code(204).send()
+    } catch (error) {
+      fastify.log.error(error)
+      return reply.code(500).send({ error: 'Failed to delete armor' })
+    }
+  })
+
   // Add armor to character
   fastify.post('/characters/:characterId/armors', async (request, reply) => {
     try {

@@ -83,4 +83,48 @@ export default async function weaponRoutes(fastify: FastifyInstance) {
       })
     }
   })
+
+  // Update weapon
+  fastify.put('/weapons/:id', async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string }
+      const weaponData = request.body as any
+
+      const weapon = await models.Weapon.findByPk(parseInt(id))
+
+      if (!weapon) {
+        return reply.code(404).send({ error: 'Weapon not found' })
+      }
+
+      await weapon.update({
+        ...weaponData,
+        name: weaponData.name.toUpperCase(),
+      })
+
+      return reply.send(weapon)
+    } catch (error) {
+      fastify.log.error(error)
+      return reply.code(400).send({ error: 'Failed to update weapon' })
+    }
+  })
+
+  // Delete weapon
+  fastify.delete('/weapons/:id', async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string }
+
+      const weapon = await models.Weapon.findByPk(parseInt(id))
+
+      if (!weapon) {
+        return reply.code(404).send({ error: 'Weapon not found' })
+      }
+
+      await weapon.destroy()
+
+      return reply.code(204).send()
+    } catch (error) {
+      fastify.log.error(error)
+      return reply.code(500).send({ error: 'Failed to delete weapon' })
+    }
+  })
 }

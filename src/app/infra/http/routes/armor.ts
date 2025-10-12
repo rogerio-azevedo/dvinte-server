@@ -106,10 +106,22 @@ export default async function armorRoutes(fastify: FastifyInstance) {
         return reply.code(404).send({ error: 'Armor not found' })
       }
 
-      await armor.update({
+      // Normaliza os valores numéricos: converte string vazia para 0
+      const normalizedData = {
         ...armorData,
         name: armorData.name.toUpperCase(),
-      })
+        type: Number(armorData.type) || 0,
+        bonus: Number(armorData.bonus) || 0,
+        dexterity: Number(armorData.dexterity) || 0,
+        penalty: Number(armorData.penalty) || 0,
+        magic: Number(armorData.magic) || 0,
+        displacement_s: Number(armorData.displacement_s) || 0,
+        displacement_m: Number(armorData.displacement_m) || 0,
+        weight: Number(armorData.weight) || 0,
+        price: Number(armorData.price) || 0,
+      }
+
+      await armor.update(normalizedData)
 
       return reply.send(armor)
     } catch (error) {

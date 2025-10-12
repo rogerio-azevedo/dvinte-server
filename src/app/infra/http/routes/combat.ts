@@ -392,6 +392,12 @@ export default async function combatRoutes(fastify: FastifyInstance) {
         int_temp: number
         wis_temp: number
         cha_temp: number
+        attack_bonus: number
+        damage_bonus: string | null
+        armor_class_bonus: number
+        fortitude_bonus: number
+        reflex_bonus: number
+        will_bonus: number
         weight: number
         price: number
         book: string
@@ -552,6 +558,12 @@ export default async function combatRoutes(fastify: FastifyInstance) {
             int_temp: c.int_temp || 0,
             wis_temp: c.wis_temp || 0,
             cha_temp: c.cha_temp || 0,
+            attack_bonus: c.attack_bonus || 0,
+            damage_bonus: c.damage_bonus || '',
+            armor_class_bonus: c.armor_class_bonus || 0,
+            fortitude_bonus: c.fortitude_bonus || 0,
+            reflex_bonus: c.reflex_bonus || 0,
+            will_bonus: c.will_bonus || 0,
             weight: c.weight || 0,
             price: c.price || 0,
             book: c.book || '',

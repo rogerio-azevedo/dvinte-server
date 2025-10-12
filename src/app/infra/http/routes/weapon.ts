@@ -96,10 +96,23 @@ export default async function weaponRoutes(fastify: FastifyInstance) {
         return reply.code(404).send({ error: 'Weapon not found' })
       }
 
-      await weapon.update({
+      // Normaliza os valores numéricos: converte string vazia para 0
+      const normalizedData = {
         ...weaponData,
         name: weaponData.name.toUpperCase(),
-      })
+        dice_s: Number(weaponData.dice_s) || 0,
+        dice_m: Number(weaponData.dice_m) || 0,
+        multiplier_s: Number(weaponData.multiplier_s) || 0,
+        multiplier_m: Number(weaponData.multiplier_m) || 0,
+        critical: Number(weaponData.critical) || 0,
+        crit_from: Number(weaponData.crit_from) || 0,
+        range: Number(weaponData.range) || 0,
+        weight: Number(weaponData.weight) || 0,
+        price: Number(weaponData.price) || 0,
+        str_bonus: Number(weaponData.str_bonus) || 0,
+      }
+
+      await weapon.update(normalizedData)
 
       return reply.send(weapon)
     } catch (error) {

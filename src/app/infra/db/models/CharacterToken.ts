@@ -15,6 +15,7 @@ class CharacterToken
   declare rotation: number
   declare enabled: boolean
   declare label: string | null
+  declare layer: 'public' | 'gm'
   declare readonly created_at: Date
   declare readonly updated_at: Date
 
@@ -49,6 +50,11 @@ export function initCharacterToken(sequelize: Sequelize) {
       label: {
         type: DataTypes.STRING(255),
         allowNull: true,
+      },
+      layer: {
+        type: DataTypes.ENUM('public', 'gm'),
+        allowNull: false,
+        defaultValue: 'public',
       },
     },
     {

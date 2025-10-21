@@ -18,6 +18,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
           'rotation',
           'enabled',
           'label',
+          'layer',
         ],
         include: [
           {
@@ -51,6 +52,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         rotation: t.rotation,
         enabled: t.enabled,
         label: t.label,
+        layer: t.layer || 'public',
         image: t.tokens?.url,
         tokens: t.tokens,
         character: t.character,
@@ -235,6 +237,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
           'rotation',
           'enabled',
           'label',
+          'layer',
         ],
         include: [
           {
@@ -268,6 +271,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         rotation: t.rotation,
         enabled: t.enabled,
         label: t.label,
+        layer: t.layer || 'public',
         image: t.tokens?.url,
         tokens: t.tokens,
         character: t.character,
@@ -332,6 +336,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
           'rotation',
           'enabled',
           'label',
+          'layer',
         ],
         include: [
           {
@@ -365,6 +370,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         rotation: t.rotation,
         enabled: t.enabled,
         label: t.label,
+        layer: t.layer || 'public',
         image: t.tokens?.url,
         tokens: t.tokens,
         character: t.character,
@@ -403,6 +409,84 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
     } catch (error) {
       fastify.log.error(error)
       return reply.code(500).send({ error: 'Failed to delete character token' })
+    }
+  })
+
+  // Reveal GM Layer - Move all GM tokens to public layer
+  fastify.post('/chartokens/reveal-layer', async (request, reply) => {
+    try {
+      // Update all GM layer tokens to public
+      await models.CharacterToken.update(
+        { layer: 'public' },
+        { where: { layer: 'gm' } }
+      )
+
+      // Get updated list of all tokens
+      const allTokens = await models.CharacterToken.findAll({
+        attributes: [
+          'id',
+          'character_id',
+          'x',
+          'y',
+          'width',
+          'height',
+          'rotation',
+          'enabled',
+          'label',
+          'layer',
+        ],
+        include: [
+          {
+            model: models.Token,
+            as: 'tokens',
+            attributes: ['id', 'name', 'path', 'url'],
+          },
+          {
+            model: models.Character,
+            as: 'character',
+            attributes: [
+              'id',
+              'name',
+              'level',
+              'health',
+              'health_now',
+              'user_id',
+            ],
+          },
+        ],
+      })
+
+      const tokens = allTokens.map(t => ({
+        id: t.id,
+        character_id: t.character_id,
+        token_id: t.token_id,
+        x: t.x,
+        y: t.y,
+        width: t.width,
+        height: t.height,
+        rotation: t.rotation,
+        enabled: t.enabled,
+        label: t.label,
+        layer: t.layer || 'public',
+        image: t.tokens?.url,
+        tokens: t.tokens,
+        character: t.character,
+        created_at: t.created_at,
+        updated_at: t.updated_at,
+      }))
+
+      // Broadcast via WebSocket to sync with all connected users
+      updateToken(tokens)
+
+      fastify.log.info('GM Layer revealed - all GM tokens moved to public')
+      return reply.send({
+        success: true,
+        message: 'GM Layer revealed successfully',
+        tokens,
+      })
+    } catch (error) {
+      fastify.log.error(error)
+      return reply.code(500).send({ error: 'Failed to reveal GM layer' })
     }
   })
 }

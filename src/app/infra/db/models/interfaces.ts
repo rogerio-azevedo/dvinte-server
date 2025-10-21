@@ -141,6 +141,10 @@ export interface GameMapAttributes {
   campaign_id?: number
   battle: string
   world?: string
+  battle_gm?: string
+  portrait?: string
+  portrait_gm?: string
+  orientation?: boolean
   width?: number
   height?: number
   grid?: boolean
@@ -171,6 +175,7 @@ export interface CharacterTokenAttributes {
   rotation?: number
   enabled?: boolean
   label?: string | null
+  layer?: 'public' | 'gm'
   created_at?: Date
   updated_at?: Date
 }

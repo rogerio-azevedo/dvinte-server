@@ -7,6 +7,13 @@ const gameMapSchema = z.object({
   campaign_id: z.union([z.number(), z.string()]).transform(val => Number(val)),
   battle: z.string(),
   world: z.string(),
+  battle_gm: z.string().optional(),
+  portrait: z.string().optional(),
+  portrait_gm: z.string().optional(),
+  orientation: z
+    .union([z.boolean(), z.string()])
+    .transform(val => (typeof val === 'string' ? val === 'true' : val))
+    .optional(),
   width: z
     .union([z.number(), z.string()])
     .transform(val => (val === '' ? 0 : Number(val))),
@@ -32,6 +39,13 @@ const updateGameMapSchema = z.object({
     .optional(),
   battle: z.string().nullable().optional(),
   world: z.string().nullable().optional(),
+  battle_gm: z.string().nullable().optional(),
+  portrait: z.string().nullable().optional(),
+  portrait_gm: z.string().nullable().optional(),
+  orientation: z
+    .union([z.boolean(), z.string()])
+    .transform(val => (typeof val === 'string' ? val === 'true' : val))
+    .optional(),
   width: z
     .union([z.number(), z.string()])
     .transform(val => Number(val))

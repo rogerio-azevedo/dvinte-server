@@ -5,6 +5,10 @@ interface GameMapAttributes {
   campaign_id: number
   battle: string
   world: string
+  battle_gm?: string
+  portrait?: string
+  portrait_gm?: string
+  orientation?: boolean
   width: number
   height: number
   grid: boolean
@@ -20,6 +24,10 @@ class GameMap extends Model<GameMapAttributes> {
   declare campaign_id: number
   declare battle: string
   declare world: string
+  declare battle_gm?: string
+  declare portrait?: string
+  declare portrait_gm?: string
+  declare orientation?: boolean
   declare width: number
   declare height: number
   declare grid: boolean
@@ -49,6 +57,22 @@ const initGameMap = (sequelize: Sequelize): ModelStatic<GameMap> => {
       world: {
         type: DataTypes.STRING,
         allowNull: false,
+      },
+      battle_gm: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      portrait: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      portrait_gm: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      orientation: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
       },
       width: {
         type: DataTypes.INTEGER,

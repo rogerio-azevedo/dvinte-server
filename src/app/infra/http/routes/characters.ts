@@ -231,7 +231,11 @@ export default async function characterRoutes(fastify: FastifyInstance) {
           { model: models.Race, as: 'race' },
           { model: models.Alignment, as: 'alignment' },
           { model: models.Divinity, as: 'divinity' },
-          { model: models.User, as: 'user', attributes: ['id', 'name'] },
+          {
+            model: models.User,
+            as: 'user',
+            attributes: ['id', 'name', 'is_gm'],
+          },
           { model: models.Portrait, as: 'portrait' },
         ],
         where: { is_ativo: true },
@@ -247,6 +251,7 @@ export default async function characterRoutes(fastify: FastifyInstance) {
           alignment: charData.alignment?.name || '',
           divinity: charData.divinity?.name || '',
           user: charData.user?.name || '',
+          user_is_gm: charData.user?.is_gm || false,
           portrait: charData.portrait?.url || '',
         }
       })

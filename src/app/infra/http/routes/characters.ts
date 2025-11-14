@@ -237,14 +237,67 @@ export default async function characterRoutes(fastify: FastifyInstance) {
             attributes: ['id', 'name', 'is_gm'],
           },
           { model: models.Portrait, as: 'portrait' },
+          { model: models.Attribute, as: 'attribute' },
+          { model: models.AttributeTemp, as: 'attribute_temp' },
+          {
+            association: 'classes',
+            attributes: ['name', 'attack'],
+            through: { attributes: ['level'] },
+          },
+          {
+            association: 'armors',
+            attributes: ['type', 'bonus', 'dexterity'],
+            through: { attributes: ['defense'] },
+          },
+          {
+            association: 'equipments',
+            attributes: ['armor_class_bonus'],
+          },
         ],
-        where: { is_ativo: true },
         order: [['created_at', 'DESC']],
       })
 
       // Transform data for frontend compatibility
       const transformedCharacters = characters.map((char: any) => {
         const charData = char.toJSON()
+
+        // Calculate armor bonuses by type
+        const calculateArmorTypeTotal = (type: number) => {
+          return (
+            charData.armors
+              ?.filter((a: any) => a.type === type)
+              ?.reduce((acc: number, val: any) => {
+                return acc + (val.bonus + (val.CharacterArmor?.defense || 0))
+              }, 0) || 0
+          )
+        }
+
+        const armor = calculateArmorTypeTotal(1)
+        const shield = calculateArmorTypeTotal(2)
+        const natural = calculateArmorTypeTotal(3)
+        const deflex = calculateArmorTypeTotal(4)
+        const others = calculateArmorTypeTotal(5)
+
+        // Calculate max dexterity
+        const maxDex = Math.min(
+          ...(charData.armors
+            ?.filter((a: any) => a.dexterity > 0)
+            .map((item: any) => item.dexterity) || [999])
+        )
+
+        // Calculate equipment armor bonus
+        const equipmentArmorBonus =
+          charData.equipments?.reduce(
+            (sum: number, equip: any) => sum + (equip.armor_class_bonus || 0),
+            0
+          ) || 0
+
+        // Calculate base attack
+        const baseAttack =
+          charData.classes?.reduce((total: number, c: any) => {
+            return total + (c.CharacterClass?.level || 0)
+          }, 0) || 0
+
         return {
           ...charData,
           race: charData.race?.name || '',
@@ -253,6 +306,23 @@ export default async function characterRoutes(fastify: FastifyInstance) {
           user: charData.user?.name || '',
           user_is_gm: charData.user?.is_gm || false,
           portrait: charData.portrait?.url || '',
+          armor,
+          shield,
+          natural,
+          deflex,
+          others,
+          equipmentArmorBonus,
+          maxDex: maxDex === 999 ? 0 : maxDex,
+          dexMod:
+            getModifier(
+              charData.attribute_temp?.dexterity ||
+                charData.attribute?.dexterity
+            ) || 0,
+          strMod:
+            getModifier(
+              charData.attribute_temp?.strength || charData.attribute?.strength
+            ) || 0,
+          baseAttack,
         }
       })
 

@@ -689,7 +689,7 @@ export default async function characterRoutes(fastify: FastifyInstance) {
   fastify.put('/characters/:id', async (request, reply) => {
     try {
       const { id } = request.params as { id: string }
-      const characterData = characterSchema.partial().parse(request.body)
+      const data = characterSchema.partial().parse(request.body)
 
       const character = await models.Character.findByPk(parseInt(id))
 
@@ -697,7 +697,46 @@ export default async function characterRoutes(fastify: FastifyInstance) {
         return reply.code(404).send({ error: 'Character not found' })
       }
 
-      await character.update(characterData)
+      // Update character basic data
+      await character.update(data)
+
+      // Update character classes if provided
+      if (data.classe && data.classe.length > 0) {
+        fastify.log.info(
+          'Updating character classes:',
+          JSON.stringify(data.classe, null, 2)
+        )
+
+        // Delete existing classes
+        await sequelize.query(
+          `DELETE FROM character_classes WHERE character_id = :character_id`,
+          {
+            replacements: { character_id: character.id },
+            type: QueryTypes.DELETE,
+          }
+        )
+
+        // Create new classes
+        for (const classItem of data.classe) {
+          const classData = {
+            character_id: character.id,
+            class_id: classItem.class_id,
+            level: classItem.level,
+            created_at: new Date(),
+            updated_at: new Date(),
+          }
+
+          await sequelize.query(
+            `INSERT INTO character_classes (character_id, class_id, level, created_at, updated_at) 
+             VALUES (:character_id, :class_id, :level, :created_at, :updated_at)`,
+            {
+              replacements: classData,
+              type: QueryTypes.INSERT,
+            }
+          )
+        }
+        fastify.log.info('Character classes updated successfully')
+      }
 
       // Fetch updated character with associations
       const updatedCharacter = await models.Character.findByPk(character.id, {

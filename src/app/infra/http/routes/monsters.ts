@@ -152,7 +152,7 @@ export default async function monsterRoutes(fastify: FastifyInstance) {
             ],
           },
         ],
-        order: [['name', 'ASC']],
+        order: [['id', 'DESC']],
       })
 
       const formattedMonsters = monsters.map((monster: any) => ({

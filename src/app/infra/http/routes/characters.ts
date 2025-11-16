@@ -871,6 +871,20 @@ export default async function characterRoutes(fastify: FastifyInstance) {
         return reply.code(404).send({ error: 'Weapon not found' })
       }
 
+      // Check if weapon is already linked to this character
+      const existingLink = await models.CharacterWeapon.findOne({
+        where: {
+          character_id: Number(characterId),
+          weapon_id: weaponData.weapon,
+        },
+      })
+
+      if (existingLink) {
+        return reply.code(400).send({
+          error: 'Esta arma já está vinculada a este personagem',
+        })
+      }
+
       // Create character weapon association
       const characterWeapon = await models.CharacterWeapon.create({
         character_id: Number(characterId),
@@ -1050,8 +1064,6 @@ export default async function characterRoutes(fastify: FastifyInstance) {
         ],
         order: [['name', 'ASC']],
       })
-
-      fastify.log.info('Characters found ZZZZZZZZZZZZZZZZZZZZ:', characters)
 
       if (!characters.length) {
         return reply
@@ -1233,6 +1245,12 @@ export default async function characterRoutes(fastify: FastifyInstance) {
                 int_temp: c.int_temp || 0,
                 wis_temp: c.wis_temp || 0,
                 cha_temp: c.cha_temp || 0,
+                attack_bonus: c.attack_bonus || 0,
+                damage_bonus: c.damage_bonus || 0,
+                armor_class_bonus: c.armor_class_bonus || 0,
+                fortitude_bonus: c.fortitude_bonus || 0,
+                reflex_bonus: c.reflex_bonus || 0,
+                will_bonus: c.will_bonus || 0,
                 weight: c.weight || 0,
                 price: c.price || 0,
                 book: c.book || '',

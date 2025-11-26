@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify'
 import models from '../../db/models'
 import { updateToken } from '../../../shared/utils/websocket.js'
+import { getCharXp } from '../../../shared/utils/getCharXp.js'
 
 export default async function charTokenRoutes(fastify: FastifyInstance) {
   // Get all character tokens
@@ -36,6 +37,13 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
               'health',
               'health_now',
               'user_id',
+            ],
+            include: [
+              {
+                model: models.User,
+                as: 'user',
+                attributes: ['id', 'name', 'email'],
+              },
             ],
           },
         ],
@@ -90,6 +98,13 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
               'health_now',
               'user_id',
             ],
+            include: [
+              {
+                model: models.User,
+                as: 'user',
+                attributes: ['id', 'name', 'email'],
+              },
+            ],
           },
         ],
       })
@@ -131,8 +146,8 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         token_id,
         x = 250,
         y = 250,
-        width = 90,
-        height = 90,
+        width = 74.5,
+        height = 74.5,
         rotation = 90,
         enabled = false,
         label,
@@ -183,7 +198,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
   // Update character token position (without ID in URL - for drag and drop)
   fastify.put('/chartokens', async (request, reply) => {
     try {
-      const { id, x, y, width, height, rotation, enabled, label } =
+      const { id, x, y, width, height, rotation, enabled, label, user_id } =
         request.body as {
           id: number
           x?: number
@@ -193,6 +208,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
           rotation?: number
           enabled?: boolean
           label?: string | null
+          user_id?: number
         }
 
       fastify.log.info(`Updating token ${id}:`, {
@@ -203,9 +219,17 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
         rotation,
         enabled,
         label,
+        user_id,
       })
 
-      const characterToken = await models.CharacterToken.findByPk(id)
+      const characterToken = await models.CharacterToken.findByPk(id, {
+        include: [
+          {
+            model: models.Character,
+            as: 'character',
+          },
+        ],
+      })
 
       if (!characterToken) {
         return reply.code(404).send({ error: 'Character token not found' })
@@ -224,6 +248,32 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
       if (label !== undefined) updateData.label = label
 
       await characterToken.update(updateData)
+
+      // Handle user_id assignment
+      if (user_id !== undefined && user_id !== null) {
+        if (!characterToken.character) {
+          // Create a new character if token doesn't have one
+          const newCharacter = await models.Character.create({
+            name: `Token ${characterToken.id}`,
+            level: 1,
+            user_id: user_id,
+            is_ativo: true,
+            exp: getCharXp(1),
+          })
+
+          // Associate the new character with the token
+          await characterToken.update({ character_id: newCharacter.id })
+          fastify.log.info(
+            `Created new character ${newCharacter.id} for token ${id} with user_id ${user_id}`
+          )
+        } else {
+          // Update existing character's user_id
+          await characterToken.character.update({ user_id })
+          fastify.log.info(
+            `Updated character ${characterToken.character_id} user_id to ${user_id}`
+          )
+        }
+      }
 
       // Get updated list of all tokens
       const allTokens = await models.CharacterToken.findAll({
@@ -255,6 +305,13 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
               'health',
               'health_now',
               'user_id',
+            ],
+            include: [
+              {
+                model: models.User,
+                as: 'user',
+                attributes: ['id', 'name', 'email'],
+              },
             ],
           },
         ],
@@ -293,7 +350,7 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
   fastify.put('/chartokens/:id', async (request, reply) => {
     try {
       const { id } = request.params as { id: string }
-      const { x, y, width, height, rotation, enabled, label } =
+      const { x, y, width, height, rotation, enabled, label, user_id } =
         request.body as {
           x?: number
           y?: number
@@ -302,9 +359,17 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
           rotation?: number
           enabled?: boolean
           label?: string | null
+          user_id?: number
         }
 
-      const characterToken = await models.CharacterToken.findByPk(id)
+      const characterToken = await models.CharacterToken.findByPk(id, {
+        include: [
+          {
+            model: models.Character,
+            as: 'character',
+          },
+        ],
+      })
 
       if (!characterToken) {
         return reply.code(404).send({ error: 'Character token not found' })
@@ -323,6 +388,32 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
       if (label !== undefined) updateData.label = label
 
       await characterToken.update(updateData)
+
+      // Handle user_id assignment
+      if (user_id !== undefined && user_id !== null) {
+        if (!characterToken.character) {
+          // Create a new character if token doesn't have one
+          const newCharacter = await models.Character.create({
+            name: `Token ${characterToken.id}`,
+            level: 1,
+            user_id: user_id,
+            is_ativo: true,
+            exp: getCharXp(1),
+          })
+
+          // Associate the new character with the token
+          await characterToken.update({ character_id: newCharacter.id })
+          fastify.log.info(
+            `Created new character ${newCharacter.id} for token ${id} with user_id ${user_id}`
+          )
+        } else {
+          // Update existing character's user_id
+          await characterToken.character.update({ user_id })
+          fastify.log.info(
+            `Updated character ${characterToken.character_id} user_id to ${user_id}`
+          )
+        }
+      }
 
       // Get updated list of all tokens
       const allTokens = await models.CharacterToken.findAll({
@@ -354,6 +445,13 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
               'health',
               'health_now',
               'user_id',
+            ],
+            include: [
+              {
+                model: models.User,
+                as: 'user',
+                attributes: ['id', 'name', 'email'],
+              },
             ],
           },
         ],
@@ -451,6 +549,13 @@ export default async function charTokenRoutes(fastify: FastifyInstance) {
               'health',
               'health_now',
               'user_id',
+            ],
+            include: [
+              {
+                model: models.User,
+                as: 'user',
+                attributes: ['id', 'name', 'email'],
+              },
             ],
           },
         ],

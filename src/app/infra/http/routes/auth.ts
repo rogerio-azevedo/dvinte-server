@@ -129,6 +129,22 @@ export default async function authRoutes(fastify: FastifyInstance) {
     }
   })
 
+  // Get all users
+  fastify.get('/users', async (request, reply) => {
+    try {
+      const users = await models.User.findAll({
+        attributes: ['id', 'name', 'email', 'is_gm', 'is_ativo'],
+        where: { is_ativo: true },
+        order: [['name', 'ASC']],
+      })
+
+      return reply.send(users)
+    } catch (error) {
+      fastify.log.error('Error fetching users:', error)
+      return reply.code(500).send({ error: 'Failed to fetch users' })
+    }
+  })
+
   // Debug route to check user
   fastify.get('/debug/user/:email', async (request, reply) => {
     try {

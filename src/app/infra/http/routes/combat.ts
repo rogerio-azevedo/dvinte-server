@@ -621,12 +621,15 @@ export default async function combatRoutes(fastify: FastifyInstance) {
         createdAt: { $gte: data1, $lte: data2 },
       }).sort({ createdAt: 1 })
 
-      const messages = logs.map(log => ({
-        id: log.id,
+      const messages = logs.map((log: any) => ({
+        id: String(log._id),
+        user_id: log.user_id,
         user: log.user,
         date: log.createdAt,
         message: log.message,
-        isCrit: log.isCrit,
+        isCrit: log.isCrit || 'NORMAL',
+        result: log.result,
+        type: log.type,
       }))
 
       return reply.send(messages)
@@ -648,10 +651,11 @@ export default async function combatRoutes(fastify: FastifyInstance) {
       // Return in frontend format - seguindo o padrão do legado
       const response = {
         id: savedLog._id,
+        user_id: savedLog.user_id,
         message: savedLog.message,
         user: savedLog.user,
         date: savedLog.createdAt,
-        isCrit: savedLog.isCrit === 'true',
+        isCrit: savedLog.isCrit || 'NORMAL', // Mantém como string: 'HIT', 'FAIL', ou 'NORMAL'
         result: savedLog.result,
         type: savedLog.type,
       }
@@ -675,6 +679,31 @@ export default async function combatRoutes(fastify: FastifyInstance) {
         error: 'Failed to create combat message',
         details: error instanceof Error ? error.message : String(error),
       })
+    }
+  })
+
+  // Delete combat message (GM only)
+  fastify.delete('/combats/:id', async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string }
+
+      const deletedLog = await Logs.findByIdAndDelete(id)
+
+      if (!deletedLog) {
+        return reply.code(404).send({ error: 'Mensagem não encontrada' })
+      }
+
+      // Broadcast deletion via Socket.IO
+      saveMessage({
+        event: 'chat.delete',
+        data: { id },
+      })
+
+      fastify.log.info(`Combat message deleted: ${id}`)
+      return reply.send({ message: 'Mensagem excluída com sucesso', id })
+    } catch (error) {
+      fastify.log.error(error)
+      return reply.code(500).send({ error: 'Failed to delete combat message' })
     }
   })
 
